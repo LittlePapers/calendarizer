@@ -1,15 +1,23 @@
-import { useState } from 'react';
-import reactLogo from './assets/react.svg';
-import upload from './assets/file_upload.svg';
-import './App.css';
-import { DropImageZone, UploadImageButton } from './components';
+import { useEffect, useState } from 'react';
+import reactLogo from '../../assets/react.svg';
+import upload from '../../assets/file_upload.svg';
+import { DropImageZone, UploadImageButton } from '../../components';
+import { useNavigate } from 'react-router-dom';
+import '../../App.css';
 
-function App() {
+function Home() {
   const [file, setFile] = useState<string>('');
+  const navigate = useNavigate();
 
   const handleSetImage = (img: string) => {
     setFile(img);
   };
+
+  useEffect(() => {
+    if (file) {
+      navigate('/editor');
+    }
+  }, [file]);
 
   return (
     <div className="flex justify-center items-center w-2/3 h-screen mx-auto">
@@ -37,4 +45,4 @@ function App() {
   );
 }
 
-export default App;
+export default Home;
