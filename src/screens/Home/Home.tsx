@@ -15,32 +15,26 @@ function Home() {
 
   useEffect(() => {
     if (file) {
+      localStorage.setItem('fileUrl', file);
       navigate('/editor');
     }
   }, [file]);
 
   return (
     <div className="flex justify-center items-center w-2/3 h-screen mx-auto">
-      {file ? (
-        // Temporal piece of code, ideally after having the image we should keep it in state (redux ?)
-        <div className="bg-sky-400 flex rounded-lg flex-col items-center justify-center p-12">
-          <img src={file} className="h-auto max-w-lg mx-auto my-4" />
-        </div>
-      ) : (
-        <div className="bg-white p-4 flex flex-col rounded-lg shadow-xl flex-1">
-          <DropImageZone
-            onDropimage={handleSetImage}
-            mainIcon={upload}
-            subtitleText={'Drag and drop file here to upload'}
-          />
+      <div className="bg-white p-4 flex flex-col rounded-lg shadow-xl flex-1">
+        <DropImageZone
+          onDropimage={handleSetImage}
+          mainIcon={upload}
+          subtitleText={'Drag and drop file here to upload'}
+        />
 
-          <UploadImageButton
-            onUpload={handleSetImage}
-            text={'Select from computer'}
-            icon={reactLogo}
-          />
-        </div>
-      )}
+        <UploadImageButton
+          onUpload={handleSetImage}
+          text={'Select from computer'}
+          icon={reactLogo}
+        />
+      </div>
     </div>
   );
 }
