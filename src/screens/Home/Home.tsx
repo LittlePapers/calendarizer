@@ -3,7 +3,6 @@ import reactLogo from '../../assets/react.svg';
 import upload from '../../assets/file_upload.svg';
 import { DropImageZone, UploadImageButton } from '../../components';
 import { useNavigate } from 'react-router-dom';
-import '../../App.css';
 
 function Home() {
   const [file, setFile] = useState<string>('');
