@@ -35,8 +35,13 @@ const Editor = () => {
   return (
     <div className="h-screen">
       {file && (
-        <div className="bg-slate-800 h-full flex flex-col items-center justify-center p-4">
-          <a ref={buttonRef} onClick={exportImage}>Export</a>
+        <div className="relative bg-slate-800 h-full flex flex-col items-center justify-center p-4">
+          <a 
+            className="absolute top-2 right-2 text-black bg-slate-400 rounded-sm px-2 py-1 z-10" 
+            ref={buttonRef} 
+            onClick={exportImage}> 
+            Export
+          </a>
           <CanvasEditor className="w-full h-full" onReady={onReady} />
         </div>
       )}
