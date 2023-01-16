@@ -11,7 +11,9 @@ const CanvasEditor = ({ className, onReady }: Props) => {
   const canvasElParent = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = new fabric.Canvas(canvasEl.current)
+    const canvas = new fabric.Canvas(canvasEl.current, {
+      preserveObjectStacking: true
+    });
 
     const resizeCanvas = () => {
       canvas.setHeight(canvasElParent.current?.clientHeight || 0)
@@ -19,7 +21,7 @@ const CanvasEditor = ({ className, onReady }: Props) => {
       canvas.renderAll()
     }
 
-    resizeCanvas()
+    resizeCanvas();
 
     window.addEventListener('resize', resizeCanvas, false)
 

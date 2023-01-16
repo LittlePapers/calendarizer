@@ -16,11 +16,17 @@ const Editor = () => {
 
   const onReady = (canvas: fabric.Canvas) => {
     if (!file) return;
+
     fabric.Image.fromURL(file, (oImg) => {
       oImg.scaleToWidth(canvas.width || 300);
       oImg.scaleToHeight(canvas.height || 300);
       canvas.add(oImg);
+      canvas.sendToBack(oImg);
     });
+
+    /* Add month calendar */
+    // drawMonth(1, 2022)
+    // canvas.add(January)
 
     setCanvas(canvas);
   };
