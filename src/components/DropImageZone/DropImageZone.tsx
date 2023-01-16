@@ -33,7 +33,7 @@ const DropImageZone = ({
       onDrop={handleDrop}
     >
       <img src={mainIcon} className="h-20 w-20 mx-auto my-4" />
-      <h2 className="text-black mb-4 text-xl font-sans w-40">{subtitleText}</h2>
+      <h2 className="text-black mb-4 text-xl font-sans w-40 text-center">{subtitleText}</h2>
     </div>
   );
 };
