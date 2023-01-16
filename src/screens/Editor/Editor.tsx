@@ -15,7 +15,7 @@ const Editor = () => {
       <h1>this will be the editor!</h1>
       {file && (
         <div className="bg-sky-400 flex rounded-lg flex-col items-center justify-center p-12">
-          <img src={file} className="h-auto max-w-lg mx-auto my-4" />
+          <img src={file} className="h-auto max-w-lg mx-auto my-4 w-full" />
         </div>
       )}
     </div>
