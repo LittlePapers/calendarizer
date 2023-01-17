@@ -1,5 +1,3 @@
 import CanvasEditor from "./CanvasEditor";
-export {
-    CanvasEditor
-}
+export { CanvasEditor };
 

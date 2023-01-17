@@ -1,4 +1,4 @@
-import React, { ChangeEvent } from 'react';
+import { ChangeEvent } from 'react';
 
 interface UploadImageButtonProps {
   onUpload: (img: string) => void;

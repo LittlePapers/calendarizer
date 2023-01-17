@@ -1,4 +1,2 @@
 import DropImageZone from "./DropImageZone";
-export {
-    DropImageZone
-}
+export { DropImageZone };

@@ -1,5 +1,4 @@
 import { DragEvent } from 'react';
-import upload from './assets/file_upload.svg';
 
 interface DropImageZoneProps {
   onDropimage: (img: string) => void;

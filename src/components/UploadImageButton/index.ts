@@ -1,5 +1,3 @@
 import UploadImageButton from "./UploadImageButton";
 
-export {
-    UploadImageButton
-}
+export { UploadImageButton };
