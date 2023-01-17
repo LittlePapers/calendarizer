@@ -42,7 +42,7 @@ const drawWeek = (week: string[], top: number) => {
   });
 };
 
-const drawMonth = (year: number, month: number, canvas: fabric.Canvas) => {
+const drawMonth = (year: number, month: number, canvas: fabric.Canvas, options?: fabric.IGroupOptions) => {
 
   const dt = new Date(year, month)
 
@@ -51,8 +51,8 @@ const drawMonth = (year: number, month: number, canvas: fabric.Canvas) => {
   /* Draw body */
   const rect = new fabric.Rect({
     width: 220,
-    height: 190,
-    fill: '#d3d3d3',
+    height: 210,
+    fill: 'rgba(211, 211, 211, 0.5)',
     originX: 'center',
     originY: 'top',
   });
@@ -94,8 +94,10 @@ const drawMonth = (year: number, month: number, canvas: fabric.Canvas) => {
   const group = new fabric.Group([rect, monthLabel, weekDays, ...weeks], {
     top: 10,
     left: 10,
+    ...options,
   });
-  canvas.add(group);
+
+  return group;
 };
 
 const Editor = () => {
@@ -121,9 +123,25 @@ const Editor = () => {
     });
 
     /* Add month calendar */
-    // canvas.add(January)
-    drawMonth(2023, 0, canvas)
-    drawMonth(2023, 1, canvas)
+
+    const months = []
+    let top = 20;
+    let left = 20;
+
+    for (let i=0; i<12; i++) {
+      const month = drawMonth(2023, i, canvas, { top, left });
+      months.push(month);
+
+      left += 240;
+
+      if ((i+1) % 4 == 0) {
+        top += 230;
+        left = 20;
+      }
+    }
+
+    const group = new fabric.Group(months, { scaleX: .75, scaleY: .75 });
+    canvas.add(group);
 
     setCanvas(canvas);
   }, [file]);
