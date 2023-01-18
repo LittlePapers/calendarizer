@@ -12,18 +12,33 @@ const CanvasEditor = ({ className, onReady }: Props) => {
 
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasEl.current, {
-      preserveObjectStacking: true
+      preserveObjectStacking: true,
     });
 
-    const resizeCanvas = () => {
+    /* TODO: Keep track of image size instead */
+    const canvasWidth = canvas.getWidth();
+    const canvasHeight = canvas.getHeight();
+
+    const scaleCanvas = () => {
+      const containerWidth = canvasElParent.current?.clientWidth || 0;
+      const containerHeight = canvasElParent.current?.clientHeight || 0;
+
+      const scaleRatio = Math.min(containerWidth/canvasWidth, containerHeight/canvasHeight);
+
+      canvas.setDimensions({ width: canvasWidth * scaleRatio, height: canvasHeight * scaleRatio });
+      canvas.setZoom(scaleRatio);
+      canvas.renderAll()
+    };
+
+    const resizeCanvasToParent = () => {
       canvas.setHeight(canvasElParent.current?.clientHeight || 0)
       canvas.setWidth(canvasElParent.current?.clientWidth || 0)
       canvas.renderAll()
-    }
+    };
 
-    resizeCanvas();
+    resizeCanvasToParent();
 
-    window.addEventListener('resize', resizeCanvas, false)
+    window.addEventListener('resize', scaleCanvas, false)
 
     if (onReady) {
       onReady(canvas);
@@ -31,7 +46,7 @@ const CanvasEditor = ({ className, onReady }: Props) => {
 
     return () => {
       canvas.dispose()
-      window.removeEventListener('resize', resizeCanvas)
+      window.removeEventListener('resize', scaleCanvas)
     }
   }, [])
 
