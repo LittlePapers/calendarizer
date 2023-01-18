@@ -1,6 +1,6 @@
 import { fabric } from 'fabric';
 import { DEFAULT_WEEK_OPTIONS, DEFAULT_MONTH_OPTIONS, DEFAULT_GET_MONTHS_OPTIONS, WEEK_DAYS } from './constants';
-import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions } from './types';
+import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions, LAYOUT_OPTIONS } from './types';
 
 export const getWeekGroup = (week: string[], pOptions?: IGetWeekOptions): fabric.Group => {
   //Get default options with custom Options
@@ -107,22 +107,38 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
   //Get default options with custom Options
   const options = {...DEFAULT_GET_MONTHS_OPTIONS, ...pOptions}
   // Store variables that will mutate
-  let leftSpacing = options?.monthLeftSpacing;
-  let topSpacing = options?.monthTopSpacing;
+  let leftSpacing = options?.monthLeftSpacing || 0;
+  let topSpacing = options?.monthTopSpacing || 0;
   // create month array
   const months = [];
   // Get months
-  for (let i = 0; i < options?.numberOfMonths; i++) {
+  for (let i = 0; i < (options?.numberOfMonths || 0); i++) {
     const month = getMonthGroup(year, i, { top: topSpacing, left: leftSpacing });
     months.push(month);
 
-    leftSpacing += options?.monthWidth;
+    leftSpacing += options?.monthWidth || 0;
 
-    if ((i + 1) % options?.numberOfMonthsPerRow === 0) {
-      topSpacing += options?.monthHeight;
+    if ((i + 1) % (options?.numberOfMonthsPerRow || 0) === 0) {
+      topSpacing += options?.monthHeight || 0;
       leftSpacing = 20;
     }
   }
 
   return new fabric.Group(months, { scaleX: 0.75, scaleY: 0.75 });
+}
+
+export const createCalendarLayout = (layout: LAYOUT_OPTIONS, year: number, options = { numberOfMonthsPerRow: 1 }) => {
+  switch (layout) {
+    case LAYOUT_OPTIONS.TREEBYFOUR:
+      options.numberOfMonthsPerRow = 4;
+      break;
+    case LAYOUT_OPTIONS.SIXBYTWO:
+      options.numberOfMonthsPerRow = 2;
+      break;
+    case LAYOUT_OPTIONS.FOURBYTHREE:
+      options.numberOfMonthsPerRow = 3;
+      break;
+  }
+
+  return getMonthsGroup(year, options);
 }

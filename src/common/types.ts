@@ -29,3 +29,9 @@ export interface IGetMonthsOptions extends fabric.IGradientOptions {
   monthWidth?: number;
   monthHeight?: number;
 }
+
+export enum LAYOUT_OPTIONS {
+  TREEBYFOUR = '3X4',
+  SIXBYTWO = '6X2',
+  FOURBYTHREE = '4X3'
+}

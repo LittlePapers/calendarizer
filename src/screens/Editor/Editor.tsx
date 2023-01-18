@@ -1,12 +1,16 @@
 import { fabric } from 'fabric';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { CanvasEditor, RadioGroup } from '../../components';
-import { getMonthsGroup } from '../../common/utils';
+import { createCalendarLayout, getMonthsGroup } from '../../common/utils';
+import { LAYOUT_OPTIONS } from '../../common/types';
 
 const Editor = () => {
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [calendar, setCalendar] = useState<fabric.Group | null>(null);
-  const [currentLayout, setCurrentLayout] = useState<string>('3X4');
+  const [currentLayout, setCurrentLayout] = useState<LAYOUT_OPTIONS>(
+    LAYOUT_OPTIONS.TREEBYFOUR
+  );
+  const [currentOptions, setCurrentOptions] = useState({});
   const [file, setFile] = useState<string>('');
   const buttonRef = useRef<HTMLAnchorElement>(null);
 
@@ -45,26 +49,12 @@ const Editor = () => {
     buttonRef.current.download = 'Calendar.png';
   };
 
-  const handleRadioGroupChange = (value: string) => {
+  const handleRadioGroupChange = (layout: string) => {
     canvas?.remove(calendar as fabric.Object);
-    let newCalendar = null;
-    switch (value) {
-      case '3X4':
-        newCalendar = getMonthsGroup(2023);
-        break;
-      case '2X2':
-        newCalendar = getMonthsGroup(2023, { numberOfMonthsPerRow: 2 });
-        break;
-      case '4X3':
-        newCalendar = getMonthsGroup(2023, { numberOfMonthsPerRow: 3 });
-        break;
-      default:
-        newCalendar = getMonthsGroup(2023);
-    }
-
+    let newCalendar = createCalendarLayout(layout as LAYOUT_OPTIONS, 2023);
     canvas?.add(newCalendar);
     setCalendar(newCalendar);
-    setCurrentLayout(value);
+    setCurrentLayout(layout as LAYOUT_OPTIONS);
   };
 
   return (
@@ -80,7 +70,11 @@ const Editor = () => {
           </a>
           <div className="absolute top-20 right-2 z-10 text-white">
             <RadioGroup
-              options={['3X4', '2X2', '4X3']}
+              options={[
+                LAYOUT_OPTIONS.TREEBYFOUR,
+                LAYOUT_OPTIONS.SIXBYTWO,
+                LAYOUT_OPTIONS.FOURBYTHREE,
+              ]}
               handleChange={handleRadioGroupChange}
               activeOption={currentLayout}
               titleText={'Layout'}
