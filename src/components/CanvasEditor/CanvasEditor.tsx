@@ -10,22 +10,32 @@ const CanvasEditor = ({ className, onReady }: Props) => {
   const canvasEl = useRef(null);
   const canvasElParent = useRef<HTMLDivElement>(null);
 
+  /* Keep track of canvas size before resize to scale */
+  const canvasWidth = useRef(0);
+  const canvasHeight = useRef(0);
+
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasEl.current, {
       preserveObjectStacking: true,
     });
 
     /* TODO: Keep track of image size instead */
-    const canvasWidth = canvas.getWidth();
-    const canvasHeight = canvas.getHeight();
 
     const scaleCanvas = () => {
+
+      if (!canvasWidth.current || !canvasHeight.current) {
+        canvasWidth.current = canvas.getWidth();
+        canvasHeight.current = canvas.getHeight();
+      }
+
+      const width = canvasWidth.current;
+      const height = canvasHeight.current;
       const containerWidth = canvasElParent.current?.clientWidth || 0;
       const containerHeight = canvasElParent.current?.clientHeight || 0;
 
-      const scaleRatio = Math.min(containerWidth/canvasWidth, containerHeight/canvasHeight);
+      const scaleRatio = Math.min(containerWidth/width, containerHeight/height);
 
-      canvas.setDimensions({ width: canvasWidth * scaleRatio, height: canvasHeight * scaleRatio });
+      canvas.setDimensions({ width: width * scaleRatio, height: height * scaleRatio });
       canvas.setZoom(scaleRatio);
       canvas.renderAll()
     };
