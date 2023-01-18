@@ -2,14 +2,17 @@ import { fabric } from 'fabric';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { CanvasEditor } from '../../components';
 import { getMonthsGroup } from '../../common/utils';
+import { useNavigate } from 'react-router';
 
 const Editor = () => {
+  const navigate = useNavigate();
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [file, setFile] = useState<string>('');
   const buttonRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const savedFile = localStorage.getItem('fileUrl');
+    console.log('A ver', savedFile);
     if (savedFile) {
       setFile(savedFile);
     }
@@ -23,11 +26,15 @@ const Editor = () => {
         height: canvas.height || 300,
       };
 
-      fabric.Image.fromURL(file, (oImg) => {
-        oImg.scaleToWidth(imageOptions.width);
-        oImg.scaleToHeight(imageOptions.height);
-        canvas.add(oImg);
-        canvas.sendToBack(oImg);
+      fabric.Image.fromURL(file, (oImg: fabric.Object, hasError?: boolean) => {
+        if (!hasError) {
+          oImg.scaleToWidth(imageOptions.width);
+          oImg.scaleToHeight(imageOptions.height);
+          canvas.add(oImg);
+          canvas.sendToBack(oImg);
+        } else {
+          navigate('/', { replace: true });
+        }
       });
 
       const calendarGroup = getMonthsGroup(2023);
