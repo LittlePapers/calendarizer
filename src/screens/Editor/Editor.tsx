@@ -12,7 +12,6 @@ const Editor = () => {
 
   useEffect(() => {
     const savedFile = localStorage.getItem('fileUrl');
-    console.log('A ver', savedFile);
     if (savedFile) {
       setFile(savedFile);
     }
