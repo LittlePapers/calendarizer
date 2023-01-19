@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Editor, Home } from './screens';
+import { Editor, Home } from './pages';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
 

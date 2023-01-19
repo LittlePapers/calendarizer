@@ -10,20 +10,45 @@ const CanvasEditor = ({ className, onReady }: Props) => {
   const canvasEl = useRef(null);
   const canvasElParent = useRef<HTMLDivElement>(null);
 
+  /* Keep track of canvas size before resize to scale */
+  const canvasWidth = useRef(0);
+  const canvasHeight = useRef(0);
+
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasEl.current, {
-      preserveObjectStacking: true
+      preserveObjectStacking: true,
     });
 
-    const resizeCanvas = () => {
+    /* TODO: Keep track of image size instead */
+
+    const scaleCanvas = () => {
+
+      if (!canvasWidth.current || !canvasHeight.current) {
+        canvasWidth.current = canvas.getWidth();
+        canvasHeight.current = canvas.getHeight();
+      }
+
+      const width = canvasWidth.current;
+      const height = canvasHeight.current;
+      const containerWidth = canvasElParent.current?.clientWidth || 0;
+      const containerHeight = canvasElParent.current?.clientHeight || 0;
+
+      const scaleRatio = Math.min(containerWidth/width, containerHeight/height);
+
+      canvas.setDimensions({ width: width * scaleRatio, height: height * scaleRatio });
+      canvas.setZoom(scaleRatio);
+      canvas.renderAll()
+    };
+
+    const resizeCanvasToParent = () => {
       canvas.setHeight(canvasElParent.current?.clientHeight || 0)
       canvas.setWidth(canvasElParent.current?.clientWidth || 0)
       canvas.renderAll()
-    }
+    };
 
-    resizeCanvas();
+    resizeCanvasToParent();
 
-    window.addEventListener('resize', resizeCanvas, false)
+    window.addEventListener('resize', scaleCanvas, false)
 
     if (onReady) {
       onReady(canvas);
@@ -31,7 +56,7 @@ const CanvasEditor = ({ className, onReady }: Props) => {
 
     return () => {
       canvas.dispose()
-      window.removeEventListener('resize', resizeCanvas)
+      window.removeEventListener('resize', scaleCanvas)
     }
   }, [])
 
