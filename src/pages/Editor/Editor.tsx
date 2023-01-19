@@ -1,14 +1,22 @@
 import { fabric } from 'fabric';
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { CanvasEditor } from '../../components';
-import { getMonthsGroup } from '../../common/utils';
+import { useEffect, useState, useRef } from 'react';
+import { CanvasEditor, ColorPicker, RadioGroup } from '../../components';
+import { getNewCalendar, getMonthsGroup } from '../../common/utils';
+import { LAYOUT_OPTIONS } from '../../common/types';
+import { ColorResult } from 'react-color';
 import { useNavigate } from 'react-router';
 
 const Editor = () => {
   const navigate = useNavigate();
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
+  const [calendar, setCalendar] = useState<fabric.Group | null>(null);
   const [file, setFile] = useState<string>('');
   const buttonRef = useRef<HTMLAnchorElement>(null);
+
+  const [currentOptions, setCurrentOptions] = useState({
+    currentLayout: LAYOUT_OPTIONS.TREEBYFOUR,
+    currentColor: '#d3d3d380',
+  });
 
   useEffect(() => {
     const savedFile = localStorage.getItem('fileUrl');
@@ -17,45 +25,40 @@ const Editor = () => {
     }
   }, []);
 
+  useEffect(() => {
+    updateCalendar();
+  }, [currentOptions]);
+
   const onReady = (canvas: fabric.Canvas) => {
     if (!file) return;
-
     fabric.Image.fromURL(file, (oImg: fabric.Image, hasError?: boolean) => {
       if (hasError) {
         navigate('/', { replace: true });
         return;
       }
-
       /* Supress error when dispose was called before this */
       if (!canvas.getContext()) return;
-
       /* Resize canvas to keep image aspect ratio */
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
-
       const imgWidth = oImg.width || canvas.getWidth();
       const imgHeight = oImg.height || canvas.getHeight();
-
       const scaleRatio = Math.min(
         canvasWidth / imgWidth,
         canvasHeight / imgHeight
       );
-
       canvas.setWidth(imgWidth * scaleRatio);
       canvas.setHeight(imgHeight * scaleRatio);
-
       oImg.scaleToWidth(canvas.getWidth());
       oImg.selectable = false;
       oImg.hoverCursor = 'default';
-
       canvas.add(oImg);
       canvas.sendToBack(oImg);
     });
-
-    const calendarGroup = getMonthsGroup(2023);
+    const calendarGroup = getNewCalendar(2023, currentOptions);
     canvas.add(calendarGroup);
-
     setCanvas(canvas);
+    setCalendar(calendarGroup);
   };
 
   const exportImage = () => {
@@ -65,17 +68,59 @@ const Editor = () => {
     buttonRef.current.download = 'Calendar.png';
   };
 
+  const updateCalendar = () => {
+    canvas?.remove(calendar as fabric.Object);
+    let newCalendar = getNewCalendar(2023, currentOptions);
+    canvas?.add(newCalendar);
+    setCalendar(newCalendar);
+  };
+
+  const handleRadioGroupChange = (layout: string) => {
+    setCurrentOptions({
+      ...currentOptions,
+      currentLayout: layout as LAYOUT_OPTIONS,
+    });
+  };
+
+  const handleColorChange = (color: ColorResult) => {
+    setCurrentOptions({
+      ...currentOptions,
+      currentColor: color?.hex,
+    });
+  };
   return (
     <div className="h-screen">
       {file && (
         <div className="relative bg-slate-800 h-full flex flex-col items-center justify-center p-4">
-          <a
-            className="absolute top-2 right-2 text-black bg-slate-400 rounded-sm px-2 py-1 z-10 hover:cursor-pointer"
-            ref={buttonRef}
-            onClick={exportImage}
-          >
-            Export
-          </a>
+          <div className="flex flex-col absolute top-5 right-3 z-10">
+            <a
+              className="mt-2 text-black bg-slate-400 rounded-sm px-2 py-1 z-10 text-center"
+              ref={buttonRef}
+              onClick={exportImage}
+            >
+              Export
+            </a>
+            <div className="mt-2 text-white">
+              <RadioGroup
+                options={[
+                  LAYOUT_OPTIONS.TREEBYFOUR,
+                  LAYOUT_OPTIONS.SIXBYTWO,
+                  LAYOUT_OPTIONS.FOURBYTHREE,
+                ]}
+                handleChange={handleRadioGroupChange}
+                activeOption={currentOptions?.currentLayout}
+                titleText={'Layout'}
+              />
+            </div>
+
+            <div className="mt-2 text-white">
+              <ColorPicker
+                currentColor={currentOptions?.currentColor}
+                handleColorChange={handleColorChange}
+                titleText={'background '}
+              />
+            </div>
+          </div>
           <CanvasEditor
             className="w-full h-full flex items-center justify-center"
             onReady={onReady}

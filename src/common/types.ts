@@ -22,10 +22,17 @@ export interface IGetWeekOptions extends fabric.IGroupOptions {
 }
 
 export interface IGetMonthsOptions extends fabric.IGradientOptions {
-  monthTopSpacing: number;
-  monthLeftSpacing: number;
-  numberOfMonths: number;
-  numberOfMonthsPerRow: number;
-  monthWidth: number;
-  monthHeight: number;
+  monthTopSpacing?: number;
+  monthLeftSpacing?: number;
+  numberOfMonths?: number;
+  numberOfMonthsPerRow?: number;
+  monthWidth?: number;
+  monthHeight?: number;
+  currentColor?: string;
+}
+
+export enum LAYOUT_OPTIONS {
+  TREEBYFOUR = '3X4',
+  SIXBYTWO = '6X2',
+  FOURBYTHREE = '4X3'
 }
