@@ -113,7 +113,7 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
   const months = [];
   // Get months
   for (let i = 0; i < (options?.numberOfMonths || 0); i++) {
-    const month = getMonthGroup(year, i, { top: topSpacing, left: leftSpacing });
+    const month = getMonthGroup(year, i, { top: topSpacing, left: leftSpacing, monthRectFill: options?.currentColor });
     months.push(month);
 
     leftSpacing += options?.monthWidth || 0;
@@ -127,8 +127,8 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
   return new fabric.Group(months, { scaleX: 0.75, scaleY: 0.75 });
 }
 
-export const createCalendarLayout = (layout: LAYOUT_OPTIONS, year: number, options = { numberOfMonthsPerRow: 1 }) => {
-  switch (layout) {
+export const getNewCalendar = (year: number, options: any) => {
+  switch (options?.currentLayout) {
     case LAYOUT_OPTIONS.TREEBYFOUR:
       options.numberOfMonthsPerRow = 4;
       break;
@@ -138,7 +138,12 @@ export const createCalendarLayout = (layout: LAYOUT_OPTIONS, year: number, optio
     case LAYOUT_OPTIONS.FOURBYTHREE:
       options.numberOfMonthsPerRow = 3;
       break;
+    default:
+      options.numberOfMonthsPerRow = 3;
+      break;
   }
+
+
 
   return getMonthsGroup(year, options);
 }

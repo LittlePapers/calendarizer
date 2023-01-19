@@ -28,6 +28,7 @@ export interface IGetMonthsOptions extends fabric.IGradientOptions {
   numberOfMonthsPerRow?: number;
   monthWidth?: number;
   monthHeight?: number;
+  currentColor?: string;
 }
 
 export enum LAYOUT_OPTIONS {
