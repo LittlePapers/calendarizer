@@ -18,11 +18,11 @@ const RadioGroup = ({
   };
 
   return (
-    <fieldset className="mb-5">
-      <h2 className=" text-white">{titleText}</h2>
+    <fieldset>
+      <h2 className="text-white mb-1">{titleText}</h2>
       {options?.map((option: string, index: number) => {
         return (
-          <div className="flex items-center mb-4" key={`${option}-${index}`}>
+          <div className="flex items-center mb-2" key={`${option}-${index}`}>
             <input
               type="radio"
               name="Layout"
