@@ -2,8 +2,10 @@ import { fabric } from 'fabric';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { CanvasEditor } from '../../components';
 import { getMonthsGroup } from '../../common/utils';
+import { useNavigate } from 'react-router';
 
 const Editor = () => {
+  const navigate = useNavigate();
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [file, setFile] = useState<string>('');
   const buttonRef = useRef<HTMLAnchorElement>(null);
@@ -18,7 +20,11 @@ const Editor = () => {
   const onReady = (canvas: fabric.Canvas) => {
     if (!file) return;
 
-    fabric.Image.fromURL(file, (oImg) => {
+    fabric.Image.fromURL(file, (oImg: fabric.Image, hasError?: boolean) => {
+      if (hasError) {
+        navigate('/', { replace: true });
+        return;
+      }
 
       /* Supress error when dispose was called before this */
       if (!canvas.getContext()) return;
@@ -30,7 +36,10 @@ const Editor = () => {
       const imgWidth = oImg.width || canvas.getWidth();
       const imgHeight = oImg.height || canvas.getHeight();
 
-      const scaleRatio = Math.min(canvasWidth/imgWidth, canvasHeight/imgHeight);
+      const scaleRatio = Math.min(
+        canvasWidth / imgWidth,
+        canvasHeight / imgHeight
+      );
 
       canvas.setWidth(imgWidth * scaleRatio);
       canvas.setHeight(imgHeight * scaleRatio);
@@ -67,7 +76,10 @@ const Editor = () => {
           >
             Export
           </a>
-          <CanvasEditor className="w-full h-full flex items-center justify-center" onReady={onReady} />
+          <CanvasEditor
+            className="w-full h-full flex items-center justify-center"
+            onReady={onReady}
+          />
         </div>
       )}
     </div>
