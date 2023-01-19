@@ -121,7 +121,10 @@ const Editor = () => {
               />
             </div>
           </div>
-          <CanvasEditor className="w-full h-full" onReady={onReady} />
+          <CanvasEditor
+            className="w-full h-full flex items-center justify-center"
+            onReady={onReady}
+          />
         </div>
       )}
     </div>
