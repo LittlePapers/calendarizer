@@ -1,6 +1,6 @@
 import { fabric } from 'fabric';
 import { DEFAULT_WEEK_OPTIONS, DEFAULT_MONTH_OPTIONS, DEFAULT_GET_MONTHS_OPTIONS, WEEK_DAYS } from './constants';
-import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions, LAYOUT_OPTIONS } from './types';
+import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions, LAYOUT_OPTIONS, ICurrentOptions } from './types';
 
 export const getWeekGroup = (week: string[], pOptions?: IGetWeekOptions): fabric.Group => {
   //Get default options with custom Options
@@ -127,23 +127,17 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
   return new fabric.Group(months, { scaleX: 0.75, scaleY: 0.75 });
 }
 
-export const getNewCalendar = (year: number, options: any) => {
-  switch (options?.currentLayout) {
-    case LAYOUT_OPTIONS.TREEBYFOUR:
-      options.numberOfMonthsPerRow = 4;
-      break;
-    case LAYOUT_OPTIONS.SIXBYTWO:
-      options.numberOfMonthsPerRow = 2;
-      break;
-    case LAYOUT_OPTIONS.FOURBYTHREE:
-      options.numberOfMonthsPerRow = 3;
-      break;
-    default:
-      options.numberOfMonthsPerRow = 3;
-      break;
+export const getNewCalendar = (year: number, options: ICurrentOptions) => {
+
+  const layoutMapper = {
+    [LAYOUT_OPTIONS.TREEBYFOUR]: 4,
+    [LAYOUT_OPTIONS.SIXBYTWO]: 2,
+    [LAYOUT_OPTIONS.FOURBYTHREE]: 3,
   }
 
+  const color = options.currentColor;
+  const currentColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
+  const numberOfMonthsPerRow = layoutMapper[options.currentLayout];
 
-
-  return getMonthsGroup(year, options);
+  return getMonthsGroup(year, { currentColor, numberOfMonthsPerRow });
 }

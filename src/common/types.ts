@@ -1,4 +1,5 @@
 import { fabric } from 'fabric';
+import { RGBColor } from 'react-color';
 
 export interface IGetMonthOptions extends fabric.IGroupOptions {
   monthNameFontFamily?: string;
@@ -36,3 +37,8 @@ export enum LAYOUT_OPTIONS {
   SIXBYTWO = '6X2',
   FOURBYTHREE = '4X3'
 }
+
+export interface ICurrentOptions {
+  currentLayout: LAYOUT_OPTIONS;
+  currentColor: RGBColor;
+};

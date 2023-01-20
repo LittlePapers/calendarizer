@@ -1,10 +1,11 @@
 import { fabric } from 'fabric';
 import { useEffect, useState, useRef } from 'react';
 import { CanvasEditor, ColorPicker, RadioGroup } from '../../components';
-import { getNewCalendar, getMonthsGroup } from '../../common/utils';
-import { LAYOUT_OPTIONS } from '../../common/types';
+import { getNewCalendar } from '../../common/utils';
+import { LAYOUT_OPTIONS, ICurrentOptions } from '../../common/types';
 import { ColorResult } from 'react-color';
 import { useNavigate } from 'react-router';
+
 
 const Editor = () => {
   const navigate = useNavigate();
@@ -13,9 +14,9 @@ const Editor = () => {
   const [file, setFile] = useState<string>('');
   const buttonRef = useRef<HTMLAnchorElement>(null);
 
-  const [currentOptions, setCurrentOptions] = useState({
+  const [currentOptions, setCurrentOptions] = useState<ICurrentOptions>({
     currentLayout: LAYOUT_OPTIONS.TREEBYFOUR,
-    currentColor: '#d3d3d380',
+    currentColor: { r: 211, g: 211, b: 211, a: .5 },
   });
 
   useEffect(() => {
@@ -85,7 +86,7 @@ const Editor = () => {
   const handleColorChange = (color: ColorResult) => {
     setCurrentOptions({
       ...currentOptions,
-      currentColor: color?.hex,
+      currentColor: color?.rgb,
     });
   };
   return (
@@ -100,7 +101,7 @@ const Editor = () => {
             >
               Export
             </a>
-            <div className="mt-2 text-white">
+            <div className="mt-4 text-white">
               <RadioGroup
                 options={[
                   LAYOUT_OPTIONS.TREEBYFOUR,
@@ -117,7 +118,7 @@ const Editor = () => {
               <ColorPicker
                 currentColor={currentOptions?.currentColor}
                 handleColorChange={handleColorChange}
-                titleText={'background '}
+                titleText={'Background '}
               />
             </div>
           </div>
