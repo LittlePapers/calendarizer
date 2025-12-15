@@ -5,6 +5,7 @@ interface RadioGroupProps {
   activeOption: string;
   handleChange: (value: string) => void;
   titleText?: string;
+  name?: string;
 }
 
 const RadioGroup = ({
@@ -12,6 +13,7 @@ const RadioGroup = ({
   activeOption,
   handleChange,
   titleText,
+  name,
 }: RadioGroupProps) => {
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleChange(e.target.value);
@@ -25,7 +27,7 @@ const RadioGroup = ({
           <div className="flex items-center mb-2" key={`${option}-${index}`}>
             <input
               type="radio"
-              name="Layout"
+              name={name || "RadioGroup"}
               value={option}
               className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300"
               aria-labelledby={`${option}-${index}`}

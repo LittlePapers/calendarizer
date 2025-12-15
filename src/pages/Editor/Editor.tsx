@@ -2,7 +2,7 @@ import { fabric } from 'fabric';
 import { useEffect, useState, useRef } from 'react';
 import { CanvasEditor, ColorPicker, RadioGroup } from '../../components';
 import { getNewCalendar } from '../../common/utils';
-import { LAYOUT_OPTIONS, ICurrentOptions } from '../../common/types';
+import { LAYOUT_OPTIONS, ICurrentOptions, LANG_OPTIONS } from '../../common/types';
 import { ColorResult } from 'react-color';
 import { useNavigate } from 'react-router';
 
@@ -17,6 +17,7 @@ const Editor = () => {
   const [currentOptions, setCurrentOptions] = useState<ICurrentOptions>({
     currentLayout: LAYOUT_OPTIONS.TREEBYFOUR,
     currentColor: { r: 211, g: 211, b: 211, a: .5 },
+    currentLanguage: LANG_OPTIONS.EN,
   });
 
   useEffect(() => {
@@ -31,6 +32,7 @@ const Editor = () => {
   }, [currentOptions]);
 
   const onReady = (canvas: fabric.Canvas) => {
+    const currentYear = new Date().getFullYear();
     if (!file) return;
     fabric.Image.fromURL(file, (oImg: fabric.Image, hasError?: boolean) => {
       if (hasError) {
@@ -56,7 +58,7 @@ const Editor = () => {
       canvas.add(oImg);
       canvas.sendToBack(oImg);
     });
-    const calendarGroup = getNewCalendar(2023, currentOptions);
+    const calendarGroup = getNewCalendar(currentYear, currentOptions);
     canvas.add(calendarGroup);
     setCanvas(canvas);
     setCalendar(calendarGroup);
@@ -70,8 +72,9 @@ const Editor = () => {
   };
 
   const updateCalendar = () => {
+    const currentYear = new Date().getFullYear();
     canvas?.remove(calendar as fabric.Object);
-    let newCalendar = getNewCalendar(2023, currentOptions);
+    let newCalendar = getNewCalendar(currentYear, currentOptions);
     canvas?.add(newCalendar);
     setCalendar(newCalendar);
   };
@@ -80,6 +83,13 @@ const Editor = () => {
     setCurrentOptions({
       ...currentOptions,
       currentLayout: layout as LAYOUT_OPTIONS,
+    });
+  };
+
+  const handleLanguageChange = (lang: string) => {
+    setCurrentOptions({
+      ...currentOptions,
+      currentLanguage: lang as LANG_OPTIONS,
     });
   };
 
@@ -111,6 +121,7 @@ const Editor = () => {
                 handleChange={handleRadioGroupChange}
                 activeOption={currentOptions?.currentLayout}
                 titleText={'Layout'}
+                name={'Layout'}
               />
             </div>
 
@@ -119,6 +130,16 @@ const Editor = () => {
                 currentColor={currentOptions?.currentColor}
                 handleColorChange={handleColorChange}
                 titleText={'Background '}
+              />
+            </div>
+
+            <div className="mt-4 text-white">
+              <RadioGroup
+                options={[LANG_OPTIONS.EN, LANG_OPTIONS.ES]}
+                handleChange={handleLanguageChange}
+                activeOption={currentOptions?.currentLanguage}
+                titleText={'Language'}
+                name={'Language'}
               />
             </div>
           </div>

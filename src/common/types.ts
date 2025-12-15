@@ -12,6 +12,7 @@ export interface IGetMonthOptions extends fabric.IGroupOptions {
   weekTopIncrement?: number;
   top?: number;
   left?: number;
+  lang?: LANG_OPTIONS;
 }
 
 export interface IGetWeekOptions extends fabric.IGroupOptions {
@@ -30,6 +31,7 @@ export interface IGetMonthsOptions extends fabric.IGradientOptions {
   monthWidth?: number;
   monthHeight?: number;
   currentColor?: string;
+  lang?: LANG_OPTIONS;
 }
 
 export enum LAYOUT_OPTIONS {
@@ -38,7 +40,13 @@ export enum LAYOUT_OPTIONS {
   FOURBYTHREE = '4X3'
 }
 
+export enum LANG_OPTIONS {
+  EN = 'EN',
+  ES = 'ES',
+}
+
 export interface ICurrentOptions {
   currentLayout: LAYOUT_OPTIONS;
   currentColor: RGBColor;
+  currentLanguage: LANG_OPTIONS;
 };

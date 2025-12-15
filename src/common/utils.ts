@@ -1,6 +1,6 @@
 import { fabric } from 'fabric';
-import { DEFAULT_WEEK_OPTIONS, DEFAULT_MONTH_OPTIONS, DEFAULT_GET_MONTHS_OPTIONS, WEEK_DAYS } from './constants';
-import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions, LAYOUT_OPTIONS, ICurrentOptions } from './types';
+import { DEFAULT_WEEK_OPTIONS, DEFAULT_MONTH_OPTIONS, DEFAULT_GET_MONTHS_OPTIONS, WEEK_DAYS_EN, WEEK_DAYS_ES } from './constants';
+import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions, LAYOUT_OPTIONS, ICurrentOptions, LANG_OPTIONS } from './types';
 
 export const getWeekGroup = (week: string[], pOptions?: IGetWeekOptions): fabric.Group => {
   //Get default options with custom Options
@@ -50,8 +50,10 @@ export const getMonthGroup = (year: number, month: number, pOptions: IGetMonthOp
   // Create a date object for the given year and month
   const date = new Date(year, month);
 
-  // Get the full name of the month
-  const monthName = date.toLocaleString("en-US", { month: "long" });
+  // Get the full name of the month based on language
+  const locale = options.lang === LANG_OPTIONS.ES ? 'es-ES' : 'en-US';
+  const monthNameRaw = date.toLocaleString(locale, { month: "long" });
+  const monthName = monthNameRaw.charAt(0).toUpperCase() + monthNameRaw.slice(1);
 
   // Create a rectangle to serve as the background of the month
   const rect = new fabric.Rect({
@@ -71,8 +73,9 @@ export const getMonthGroup = (year: number, month: number, pOptions: IGetMonthOp
     fontFamily: options.monthNameFontFamily
   });
 
-  // Draw the weekdays
-  const weekDays = getWeekGroup(WEEK_DAYS, { top: options.weekDaysTop || 0 });
+  // Draw the weekdays based on language
+  const weekdayLabels = options.lang === LANG_OPTIONS.ES ? WEEK_DAYS_ES : WEEK_DAYS_EN;
+  const weekDays = getWeekGroup(weekdayLabels, { top: options.weekDaysTop || 0 });
 
   // Create an array to store the weeks
   const weeks = [];
@@ -113,7 +116,7 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
   const months = [];
   // Get months
   for (let i = 0; i < (options?.numberOfMonths || 0); i++) {
-    const month = getMonthGroup(year, i, { top: topSpacing, left: leftSpacing, monthRectFill: options?.currentColor });
+    const month = getMonthGroup(year, i, { top: topSpacing, left: leftSpacing, monthRectFill: options?.currentColor, lang: options?.lang });
     months.push(month);
 
     leftSpacing += options?.monthWidth || 0;
@@ -139,5 +142,5 @@ export const getNewCalendar = (year: number, options: ICurrentOptions) => {
   const currentColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
   const numberOfMonthsPerRow = layoutMapper[options.currentLayout];
 
-  return getMonthsGroup(year, { currentColor, numberOfMonthsPerRow });
+  return getMonthsGroup(year, { currentColor, numberOfMonthsPerRow, lang: options.currentLanguage });
 }

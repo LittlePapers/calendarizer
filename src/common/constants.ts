@@ -1,6 +1,8 @@
 import { IGetWeekOptions, IGetMonthOptions, IGetMonthsOptions } from "./types";
 
 export const WEEK_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+export const WEEK_DAYS_EN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+export const WEEK_DAYS_ES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
 
 export const DEFAULT_WEEK_OPTIONS: IGetWeekOptions = {
   weekFontSize: 12,
