@@ -26,21 +26,22 @@ const ColorPicker = ({
 
   return (
     <React.Fragment>
-      <h4 className="mb-1">{titleText}</h4>
-      <div
-        className="relative p-1 bg-white rounded-sm shadow inline-block cursor-pointer"
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{titleText}</h4>
+      <button
+        type="button"
+        onClick={handleClick}
+        className="relative inline-flex items-center gap-1.5 rounded-md bg-slate-800/80 px-2.5 py-1.5 text-xs text-slate-100 shadow-sm ring-1 ring-inset ring-slate-600 hover:ring-slate-400 transition w-full"
       >
-        <div
-          className={'w-10 h-5 rounded-sm '}
-          style={{ backgroundColor }}
-          onClick={handleClick}
-        />
-        {displayColorPicker ? (
-          <div className={'absolute z-10 top-10 right-0'}>
-            <div
-              className={'fixed top-0 right-0 bottom-0 left-0'}
-              onClick={handleClose}
-            />
+        <span className="inline-block w-4 h-4 rounded border border-slate-500" style={{ backgroundColor }} />
+        <span>Pick color</span>
+      </button>
+      {displayColorPicker ? (
+        <div className={'absolute z-10 mt-2 right-3'}>
+          <div
+            className={'fixed top-0 right-0 bottom-0 left-0'}
+            onClick={handleClose}
+          />
+          <div className="overflow-hidden rounded-md shadow-2xl ring-1 ring-slate-900/20">
             <SketchPicker
               color={currentColor}
               onChange={handleColorChange}
@@ -55,8 +56,8 @@ const ColorPicker = ({
               ]}
             />
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </React.Fragment>
   );
 };

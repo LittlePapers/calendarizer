@@ -111,15 +111,15 @@ const Editor = () => {
     <div className="h-screen">
       {file && (
         <div className="relative bg-slate-800 h-full flex flex-col items-center justify-center p-4">
-          <div className="flex flex-col absolute top-5 right-3 z-10">
+          <div className="flex flex-col absolute top-5 right-3 z-10 max-w-[148px]">
             <a
-              className="mt-2 text-black bg-slate-400 rounded-sm px-2 py-1 z-10 text-center"
+              className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-400 z-10 text-center"
               ref={buttonRef}
               onClick={exportImage}
             >
               Export
             </a>
-            <div className="mt-4 text-white">
+            <div className="mt-3">
               <RadioGroup
                 options={[
                   LAYOUT_OPTIONS.TREEBYFOUR,
@@ -133,15 +133,16 @@ const Editor = () => {
               />
             </div>
 
-            <div className="mt-2 text-white">
+            <div className="mt-3">
               <ColorPicker
+                className="w-full"
                 currentColor={currentOptions?.currentColor}
                 handleColorChange={handleColorChange}
                 titleText={'Background '}
               />
             </div>
 
-            <div className="mt-4 text-white">
+            <div className="mt-3">
               <RadioGroup
                 options={[LANG_OPTIONS.EN, LANG_OPTIONS.ES]}
                 handleChange={handleLanguageChange}
@@ -151,21 +152,26 @@ const Editor = () => {
               />
             </div>
 
-            <div className="mt-4 text-white">
-              <h2 className="text-white mb-1">Region</h2>
-              <select
-                className="text-black rounded-sm px-2 py-1"
-                value={currentOptions.currentRegion}
-                onChange={(e) => handleRegionChange(e.target.value)}
-              >
-                <option value={REGION_OPTIONS.AR}>Argentina</option>
-                <option value={REGION_OPTIONS.US}>USA</option>
-                <option value={REGION_OPTIONS.VE}>Venezuela</option>
-                <option value={REGION_OPTIONS.ES}>Spain</option>
-                <option value={REGION_OPTIONS.MX}>Mexico</option>
-                <option value={REGION_OPTIONS.IT}>Italy</option>
-                <option value={REGION_OPTIONS.JP}>Japan</option>
-              </select>
+            <div className="mt-3">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Region</h2>
+              <div className="relative inline-block w-full">
+                <select
+                  className="appearance-none w-full rounded-md bg-slate-800/80 text-slate-100 px-2.5 py-1.5 pr-8 text-xs shadow-sm ring-1 ring-inset ring-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={currentOptions.currentRegion}
+                  onChange={(e) => handleRegionChange(e.target.value)}
+                >
+                  <option value={REGION_OPTIONS.AR}>Argentina</option>
+                  <option value={REGION_OPTIONS.US}>USA</option>
+                  <option value={REGION_OPTIONS.VE}>Venezuela</option>
+                  <option value={REGION_OPTIONS.ES}>Spain</option>
+                  <option value={REGION_OPTIONS.MX}>Mexico</option>
+                  <option value={REGION_OPTIONS.IT}>Italy</option>
+                  <option value={REGION_OPTIONS.JP}>Japan</option>
+                </select>
+                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                </svg>
+              </div>
             </div>
           </div>
           <CanvasEditor
