@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router';
 const rgbToCss = (c: RGBColor) => `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a ?? 1})`;
 
 
+const CALENDAR_NAME = 'calendar';
+
 const Editor = () => {
   const navigate = useNavigate();
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
@@ -75,6 +77,7 @@ const Editor = () => {
       backgroundImageRef.current = oImg;
     });
     const calendarGroup = getNewCalendar(currentYear, currentOptions);
+    calendarGroup.name = CALENDAR_NAME;
     canvas.add(calendarGroup);
     setCanvas(canvas);
     setCalendar(calendarGroup);
@@ -141,50 +144,45 @@ const Editor = () => {
   };
 
   const exportImage = async () => {
-    if (!canvas || !buttonRef.current || !file) return;
+    try {
+      if (!canvas || !buttonRef.current) return;
 
-    const { width: origW, height: origH } = originalImageSizeRef.current;
-    const { width: baseW, height: baseH } = baseCanvasSizeRef.current;
-    if (!origW || !origH || !baseW || !baseH) return;
+      // Use the actual background image element and original size from Fabric
+      const bg = backgroundImageRef.current;
+      if (!bg) return;
+      const { width: origW, height: origH } = bg.getOriginalSize();
+      const { width: baseW, height: baseH } = baseCanvasSizeRef.current;
+      if (!origW || !origH || !baseW || !baseH) return;
+      const rawImg = bg.getElement();
 
-    // 1) Load the original image at full resolution
-    const rawImg = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = (e) => reject(e);
-      img.src = file;
-    });
+      // 2) Prepare an offscreen canvas at original image size
+      const out = document.createElement('canvas');
+      out.width = origW;
+      out.height = origH;
+      const ctx = out.getContext('2d');
+      if (!ctx) return;
 
-    // 2) Prepare an offscreen canvas at original image size
-    const out = document.createElement('canvas');
-    out.width = origW;
-    out.height = origH;
-    const ctx = out.getContext('2d');
-    if (!ctx) return;
+      // Prefer high-quality resampling when compositing
+      ctx.imageSmoothingEnabled = true;
+      const ctxHQ = ctx as CanvasRenderingContext2D & {
+        imageSmoothingQuality?: 'low' | 'medium' | 'high';
+      };
+      ctxHQ.imageSmoothingQuality = 'high';
 
-    // Prefer high-quality resampling when compositing
-    ctx.imageSmoothingEnabled = true;
-    const ctxHQ = ctx as CanvasRenderingContext2D & {
-      imageSmoothingQuality?: 'low' | 'medium' | 'high';
-    };
-    ctxHQ.imageSmoothingQuality = 'high';
-
-    // 3) Draw the original image as the base layer
-    ctx.drawImage(rawImg, 0, 0, origW, origH);
+      // 3) Draw the original image as the base layer
+      ctx.drawImage(rawImg, 0, 0, origW, origH);
 
     // 4) Render Fabric overlay at the photo's native resolution, excluding the background image.
-    const bg = backgroundImageRef.current;
-    const prevVisible: boolean | undefined = bg?.visible;
-    const prevVpt: number[] | null = canvas.viewportTransform ? [...canvas.viewportTransform] : null;
-    const prevZoom = canvas.getZoom();
+      const prevVisible: boolean | undefined = bg?.visible;
+      const prevVpt: number[] | null = canvas.viewportTransform ? [...canvas.viewportTransform] : null;
+      const prevZoom = canvas.getZoom();
     try {
-      if (bg) {
-        bg.visible = false; // ensure the background image is not re-rendered into the overlay
-      }
+        if (bg) {
+          bg.visible = false; // ensure the background image is not re-rendered into the overlay
+        }
 
-      // Force the live canvas to render latest edits (e.g., text editing)
-      canvas.requestRenderAll();
+        // Force the live canvas to render latest edits (e.g., text editing)
+        canvas.requestRenderAll();
 
       // Compute multipliers; use width-based for export size, but draw to exact dest dims
       const mW = origW / baseW;
@@ -192,90 +190,88 @@ const Editor = () => {
       const multiplier = mW; // height will be matched by drawImage dest sizing
 
       // Temporarily neutralize viewport transform (zoom/pan) to export in logical coordinates
-      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-      canvas.setZoom(1);
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        canvas.setZoom(1);
 
       // Export the live canvas overlay (no viewport transform), minus the background
-      const overlayCanvasEl = canvas.toCanvasElement(multiplier, {
-        left: 0,
-        top: 0,
-        width: baseW,
-        height: baseH,
-      } as const);
+        const overlayCanvasEl = canvas.toCanvasElement(multiplier, {
+          left: 0,
+          top: 0,
+          width: baseW,
+          height: baseH,
+        } as const);
 
       // 5) Composite overlay on top of the base image
-      ctx.drawImage(overlayCanvasEl, 0, 0, origW, origH);
-    } finally {
-      // Restore background visibility, viewport transform and zoom
-      if (bg) {
-        bg.visible = prevVisible as boolean;
+        ctx.drawImage(overlayCanvasEl, 0, 0, origW, origH);
+      } finally {
+        // Restore background visibility, viewport transform and zoom
+        if (bg) {
+          bg.visible = prevVisible as boolean;
+        }
+        if (prevVpt) {
+          canvas.setViewportTransform(prevVpt);
+        }
+        canvas.setZoom(prevZoom);
+        canvas.requestRenderAll();
       }
-      if (prevVpt) {
-        canvas.setViewportTransform(prevVpt);
-      }
-      canvas.setZoom(prevZoom);
-      canvas.requestRenderAll();
-    }
 
-    // 6) Export result (synchronous to align with anchor click behavior)
-    buttonRef.current.href = out.toDataURL('image/png');
-    buttonRef.current.download = 'Calendar.png';
+      // 6) Export result (synchronous to align with anchor click behavior)
+      buttonRef.current.href = out.toDataURL('image/png');
+      buttonRef.current.download = 'Calendar.png';
+    } catch (err) {
+      // Gracefully ignore export errors (e.g., invalid blob URL)
+      // Optionally, could surface a toast or UI message here.
+      // eslint-disable-next-line no-console
+      console.error('Export failed:', err);
+    }
   };
 
   const updateCalendar = () => {
     const currentYear = new Date().getFullYear();
-    // Preserve previous calendar transform and stacking order
+    // Identify existing calendar(s) on the canvas and capture transform/z-index
     const prev = calendar;
+    let sourceForProps: fabric.Group | null = prev;
     let prevIndex = -1;
     let wasActive = false;
-    let prevProps: Partial<fabric.Group> & {
-      flipX?: boolean;
-      flipY?: boolean;
-      originX?: string;
-      originY?: string;
-    } = {};
-
-    if (prev && canvas) {
-      // Capture current transform/position
-      prevProps = {
-        left: prev.left,
-        top: prev.top,
-        angle: prev.angle,
-        scaleX: prev.scaleX,
-        scaleY: prev.scaleY,
-        flipX: prev.flipX,
-        flipY: prev.flipY,
-        originX: prev.originX,
-        originY: prev.originY,
-      };
-      const objects = canvas.getObjects();
-      prevIndex = objects.indexOf(prev);
-      wasActive = canvas.getActiveObject() === prev;
-      canvas.remove(prev as fabric.Object);
-    }
-
-    const newCalendar = getNewCalendar(currentYear, currentOptions);
-
-    // Re-apply previous transform/position to the new calendar group
-    if (typeof prevProps.left === 'number' || typeof prevProps.top === 'number' ||
-        typeof prevProps.angle === 'number' || typeof prevProps.scaleX === 'number' ||
-        typeof prevProps.scaleY === 'number') {
-      newCalendar.set({
-        left: prevProps.left,
-        top: prevProps.top,
-        angle: prevProps.angle,
-        scaleX: prevProps.scaleX,
-        scaleY: prevProps.scaleY,
-      } as Partial<fabric.Group>);
-    }
-    if (prevProps.originX) newCalendar.originX = prevProps.originX;
-    if (prevProps.originY) newCalendar.originY = prevProps.originY;
-    if (typeof prevProps.flipX === 'boolean') newCalendar.flipX = prevProps.flipX;
-    if (typeof prevProps.flipY === 'boolean') newCalendar.flipY = prevProps.flipY;
-    newCalendar.setCoords();
 
     if (canvas) {
-      // Add and restore stacking order using typed Canvas API
+      const objects = canvas.getObjects();
+      const existingCalendars = objects.filter(
+        (o): o is fabric.Group => o.type === 'group' && o.name === CALENDAR_NAME
+      );
+      if (!sourceForProps && existingCalendars.length > 0) {
+        sourceForProps = existingCalendars[0];
+      }
+      if (existingCalendars.length > 0) {
+        prevIndex = objects.indexOf(existingCalendars[0]);
+      }
+      if (sourceForProps) {
+        wasActive = canvas.getActiveObject() === sourceForProps;
+      }
+      // Remove all existing calendar groups to avoid clones during rapid updates
+      existingCalendars.forEach((g) => canvas.remove(g));
+    }
+
+    // Create new calendar and carry over previous transform
+    const newCalendar = getNewCalendar(currentYear, currentOptions);
+    newCalendar.name = CALENDAR_NAME;
+
+    if (sourceForProps) {
+      newCalendar.set({
+        left: sourceForProps.left,
+        top: sourceForProps.top,
+        angle: sourceForProps.angle,
+        scaleX: sourceForProps.scaleX,
+        scaleY: sourceForProps.scaleY,
+      });
+      newCalendar.originX = sourceForProps.originX;
+      newCalendar.originY = sourceForProps.originY;
+      newCalendar.flipX = sourceForProps.flipX;
+      newCalendar.flipY = sourceForProps.flipY;
+      newCalendar.setCoords();
+    }
+
+    if (canvas) {
       canvas.add(newCalendar);
       if (prevIndex >= 0) {
         canvas.moveTo(newCalendar, prevIndex);
@@ -386,7 +382,7 @@ const Editor = () => {
               ×
             </button>
             <a
-              className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-400 z-10 text-center"
+              className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-400 z-50 text-center"
               ref={buttonRef}
               onClick={exportImage}
             >
