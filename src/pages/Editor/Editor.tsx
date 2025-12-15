@@ -33,6 +33,7 @@ const Editor = () => {
     currentLanguage: LANG_OPTIONS.EN,
     currentRegion: REGION_OPTIONS.US,
     currentCalendarFont: 'monospace',
+    currentYear: new Date().getFullYear(),
   });
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const Editor = () => {
   }, [currentOptions]);
 
   const onReady = (canvas: fabric.Canvas) => {
-    const currentYear = new Date().getFullYear();
+    const currentYear = currentOptions.currentYear;
     if (!file) return;
     fabric.Image.fromURL(file, (oImg: fabric.Image, hasError?: boolean) => {
       if (hasError) {
@@ -234,7 +235,7 @@ const Editor = () => {
   };
 
   const updateCalendar = () => {
-    const currentYear = new Date().getFullYear();
+    const currentYear = currentOptions.currentYear;
     // Identify existing calendar(s) on the canvas and capture transform/z-index
     const prev = calendar;
     let sourceForProps: fabric.Group | null = prev;
@@ -319,6 +320,14 @@ const Editor = () => {
     });
   };
 
+  const handleYearChange = (year: number) => {
+    const y = Number.isFinite(year) ? Math.max(1900, Math.min(2100, Math.trunc(year))) : new Date().getFullYear();
+    setCurrentOptions({
+      ...currentOptions,
+      currentYear: y,
+    });
+  };
+
   // Text tools
   const addText = () => {
     if (!canvas) return;
@@ -379,6 +388,7 @@ const Editor = () => {
       currentLanguage: LANG_OPTIONS.EN,
       currentRegion: REGION_OPTIONS.US,
       currentCalendarFont: 'monospace',
+      currentYear: new Date().getFullYear(),
     };
 
     setCurrentOptions(defaultOptions);
@@ -727,6 +737,31 @@ const Editor = () => {
                     </svg>
                   </div>
                 </div>
+                <div className="mt-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-white/90">Year</h2>
+                    <button
+                      type="button"
+                      title="Reset year"
+                      aria-label="Reset year"
+                      onClick={() => handleYearChange(new Date().getFullYear())}
+                      className="inline-flex items-center justify-center rounded bg-slate-700 px-2 py-0.5 text-[10px] font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  <div className="relative inline-block w-full">
+                    <input
+                      type="number"
+                      value={currentOptions.currentYear}
+                      min={1900}
+                      max={2100}
+                      onChange={(e) => handleYearChange(parseInt(e.target.value, 10))}
+                      className="w-full rounded-md bg-slate-800/80 text-slate-100 px-2.5 py-1.5 text-xs shadow-sm ring-1 ring-inset ring-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
                 <div className="mt-3">
                   <RadioGroup
                     options={[

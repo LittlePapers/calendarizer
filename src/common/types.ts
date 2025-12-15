@@ -72,4 +72,5 @@ export interface ICurrentOptions {
   currentLanguage: LANG_OPTIONS;
   currentRegion: REGION_OPTIONS;
   currentCalendarFont: string;
+  currentYear: number;
 };
