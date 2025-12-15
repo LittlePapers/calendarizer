@@ -405,6 +405,188 @@ const Editor = () => {
     canvas.requestRenderAll();
   };
 
+  // Magnet snapping while dragging objects
+  useEffect(() => {
+    if (!canvas) return;
+
+    const guides: { v: fabric.Line | null; h: fabric.Line | null } = { v: null, h: null };
+    const SNAP_TOLERANCE = 6; // px
+
+    const ensureVGuide = (x: number) => {
+      if (!canvas) return;
+      if (!guides.v) {
+        guides.v = new fabric.Line([x, 0, x, canvas.getHeight()], {
+          stroke: '#60a5fa',
+          strokeWidth: 1,
+          selectable: false,
+          evented: false,
+          excludeFromExport: true as any,
+          name: 'snap-guide-v',
+        });
+        canvas.add(guides.v);
+      }
+      guides.v.set({ x1: x, x2: x, y1: 0, y2: canvas.getHeight() });
+      canvas.bringToFront(guides.v);
+    };
+
+    const ensureHGuide = (y: number) => {
+      if (!canvas) return;
+      if (!guides.h) {
+        guides.h = new fabric.Line([0, y, canvas.getWidth(), y], {
+          stroke: '#60a5fa',
+          strokeWidth: 1,
+          selectable: false,
+          evented: false,
+          excludeFromExport: true as any,
+          name: 'snap-guide-h',
+        });
+        canvas.add(guides.h);
+      }
+      guides.h.set({ x1: 0, x2: canvas.getWidth(), y1: y, y2: y });
+      canvas.bringToFront(guides.h);
+    };
+
+    const clearGuides = () => {
+      if (!canvas) return;
+      if (guides.v) {
+        canvas.remove(guides.v);
+        guides.v = null;
+      }
+      if (guides.h) {
+        canvas.remove(guides.h);
+        guides.h = null;
+      }
+    };
+
+    const getRect = (o: fabric.Object) => {
+      const r = o.getBoundingRect(true, true);
+      return {
+        left: r.left,
+        top: r.top,
+        right: r.left + r.width,
+        bottom: r.top + r.height,
+        cx: r.left + r.width / 2,
+        cy: r.top + r.height / 2,
+        width: r.width,
+        height: r.height,
+      };
+    };
+
+    const isGuide = (o: fabric.Object) => (o as any).name === 'snap-guide-v' || (o as any).name === 'snap-guide-h';
+
+    const onMoving = (ev: fabric.IEvent) => {
+      const target = ev.target as fabric.Object | undefined;
+      if (!canvas || !target) return;
+
+      // Build list of objects to snap to (exclude target, guides, and background image)
+      const all = canvas.getObjects();
+      const activeSelection = (target as any).type === 'activeSelection' ? (target as any) : null;
+      const members = activeSelection?.getObjects?.() as fabric.Object[] | undefined;
+
+      const snapTo: fabric.Object[] = [];
+      for (const o of all) {
+        if (o === target) continue;
+        if (isGuide(o)) continue;
+        if (o === backgroundImageRef.current) continue;
+        if (members && members.includes(o)) continue;
+        snapTo.push(o);
+      }
+
+      const a = getRect(target);
+      const canvasCenterX = canvas.getWidth() / 2;
+      const canvasCenterY = canvas.getHeight() / 2;
+
+      // Find best X and Y snap candidates
+      let bestX: { delta: number; apply: () => void; guideX: number } | null = null;
+      let bestY: { delta: number; apply: () => void; guideY: number } | null = null;
+
+      const tryX = (fromX: number, toX: number) => {
+        const delta = toX - fromX;
+        if (Math.abs(delta) <= SNAP_TOLERANCE) {
+          if (!bestX || Math.abs(delta) < Math.abs(bestX.delta)) {
+            bestX = {
+              delta,
+              apply: () => target.set({ left: (target.left || 0) + delta }),
+              guideX: toX,
+            };
+          }
+        }
+      };
+      const tryY = (fromY: number, toY: number) => {
+        const delta = toY - fromY;
+        if (Math.abs(delta) <= SNAP_TOLERANCE) {
+          if (!bestY || Math.abs(delta) < Math.abs(bestY.delta)) {
+            bestY = {
+              delta,
+              apply: () => target.set({ top: (target.top || 0) + delta }),
+              guideY: toY,
+            };
+          }
+        }
+      };
+
+      // Snap to canvas center lines
+      tryX(a.cx, canvasCenterX);
+      tryY(a.cy, canvasCenterY);
+
+      // Build alignment positions for other objects
+      for (const o of snapTo) {
+        const b = getRect(o);
+        // horizontal snap (x): left/center/right
+        tryX(a.left, b.left);
+        tryX(a.cx, b.cx);
+        tryX(a.right, b.right);
+        tryX(a.left, b.right);
+        tryX(a.right, b.left);
+        // vertical snap (y): top/center/bottom
+        tryY(a.top, b.top);
+        tryY(a.cy, b.cy);
+        tryY(a.bottom, b.bottom);
+        tryY(a.top, b.bottom);
+        tryY(a.bottom, b.top);
+      }
+
+      // Apply snaps and draw guides
+      let changed = false;
+      if (bestX) {
+        bestX.apply();
+        ensureVGuide(bestX.guideX);
+        changed = true;
+      } else if (guides.v) {
+        canvas.remove(guides.v);
+        guides.v = null;
+      }
+
+      if (bestY) {
+        bestY.apply();
+        ensureHGuide(bestY.guideY);
+        changed = true;
+      } else if (guides.h) {
+        canvas.remove(guides.h);
+        guides.h = null;
+      }
+
+      if (changed) {
+        target.setCoords();
+        canvas.requestRenderAll();
+      }
+    };
+
+    const onMouseUp = () => {
+      clearGuides();
+      canvas.requestRenderAll();
+    };
+
+    canvas.on('object:moving', onMoving);
+    canvas.on('mouse:up', onMouseUp);
+
+    return () => {
+      canvas.off('object:moving', onMoving);
+      canvas.off('mouse:up', onMouseUp);
+      clearGuides();
+    };
+  }, [canvas]);
+
   // Delete selected text objects with Delete/Backspace key
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
