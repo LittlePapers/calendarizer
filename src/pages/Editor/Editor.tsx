@@ -586,18 +586,20 @@ const Editor = () => {
 
       // Apply snaps and draw guides
       let changed = false;
-      if (bestX) {
-        bestX.apply();
-        ensureVGuide(bestX.guideX);
+      if (bestX !== null) {
+        const bx = bestX as { delta: number; apply: () => void; guideX: number };
+        bx.apply();
+        ensureVGuide(bx.guideX);
         changed = true;
       } else if (guides.v) {
         canvas.remove(guides.v);
         guides.v = null;
       }
 
-      if (bestY) {
-        bestY.apply();
-        ensureHGuide(bestY.guideY);
+      if (bestY !== null) {
+        const by = bestY as { delta: number; apply: () => void; guideY: number };
+        by.apply();
+        ensureHGuide(by.guideY);
         changed = true;
       } else if (guides.h) {
         canvas.remove(guides.h);
