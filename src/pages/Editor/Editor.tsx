@@ -23,6 +23,7 @@ const Editor = () => {
   const [selectedText, setSelectedText] = useState<fabric.IText | null>(null);
   const [textColor, setTextColor] = useState<RGBColor>({ r: 255, g: 255, b: 255, a: 1 });
   const [textFont, setTextFont] = useState<string>('Arial');
+  const [textStyle, setTextStyle] = useState<'normal' | 'bold' | 'italic'>('normal');
   const [showSettings, setShowSettings] = useState<boolean>(true);
   // Track whether the calendar group is selected (for conditional Settings UI)
   const [isCalendarSelected, setIsCalendarSelected] = useState<boolean>(false);
@@ -125,12 +126,19 @@ const Editor = () => {
         const fill = (obj.fill as string) || '#ffffff';
         setTextColor(toRGBColor(fill));
         setTextFont((obj.fontFamily as string) || 'Arial');
+        const fw = (obj.fontWeight as unknown);
+        const fs = (obj.fontStyle as string) || 'normal';
+        let style: 'normal' | 'bold' | 'italic' = 'normal';
+        if (fs === 'italic') style = 'italic';
+        else if ((typeof fw === 'string' && fw.toLowerCase() === 'bold') || (typeof fw === 'number' && fw >= 600)) style = 'bold';
+        setTextStyle(style);
       } else if (obj && obj.type === 'group' && (obj as any).name === CALENDAR_NAME) {
         setSelectedText(null);
         setIsCalendarSelected(true);
       } else {
         setSelectedText(null);
         setIsCalendarSelected(false);
+        setTextStyle('normal');
       }
     };
 
@@ -349,7 +357,7 @@ const Editor = () => {
     canvas.renderAll();
   };
 
-  const applyTextChanges = (updates: { text?: string; colorRgb?: RGBColor; font?: string; }) => {
+  const applyTextChanges = (updates: { text?: string; colorRgb?: RGBColor; font?: string; style?: 'normal' | 'bold' | 'italic'; }) => {
     if (!canvas || !selectedText) return;
     if (updates.text !== undefined) selectedText.text = updates.text;
     if (updates.colorRgb !== undefined) {
@@ -357,6 +365,18 @@ const Editor = () => {
       selectedText.set('fill', rgbToCss(c));
     }
     if (updates.font !== undefined) selectedText.set('fontFamily', updates.font);
+    if (updates.style !== undefined) {
+      if (updates.style === 'bold') {
+        selectedText.set('fontWeight', 'bold');
+        selectedText.set('fontStyle', 'normal');
+      } else if (updates.style === 'italic') {
+        selectedText.set('fontWeight', 'normal');
+        selectedText.set('fontStyle', 'italic');
+      } else {
+        selectedText.set('fontWeight', 'normal');
+        selectedText.set('fontStyle', 'normal');
+      }
+    }
     canvas.renderAll();
   };
 
@@ -369,6 +389,12 @@ const Editor = () => {
     const val = e.target.value;
     setTextFont(val);
     applyTextChanges({ font: val });
+  };
+
+  const onTextStyleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value as 'normal' | 'bold' | 'italic';
+    setTextStyle(val);
+    applyTextChanges({ style: val });
   };
 
   const onCalendarFontChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -404,6 +430,8 @@ const Editor = () => {
           fontFamily: 'Arial',
           fill: rgbToCss({ r: 255, g: 255, b: 255, a: 1 }),
           fontSize: 24,
+          fontWeight: 'normal',
+          fontStyle: 'normal',
         });
       }
     });
@@ -694,6 +722,20 @@ const Editor = () => {
                       <option value="Trebuchet MS">Trebuchet MS</option>
                       <option value="Impact">Impact</option>
                       <option value="Comic Sans MS">Comic Sans MS</option>
+                    </select>
+                    <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="relative inline-block w-full">
+                    <select
+                      value={textStyle}
+                      onChange={onTextStyleChange}
+                      className="appearance-none w-full rounded-md bg-slate-800/80 text-slate-100 px-2.5 py-1.5 pr-8 text-xs shadow-sm ring-1 ring-inset ring-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                      <option value="italic">Italic</option>
                     </select>
                     <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
