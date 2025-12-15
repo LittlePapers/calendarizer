@@ -6,6 +6,9 @@ import { LAYOUT_OPTIONS, ICurrentOptions, LANG_OPTIONS, REGION_OPTIONS } from '.
 import { ColorResult, RGBColor } from 'react-color';
 import { useNavigate } from 'react-router';
 
+// Small helpers
+const rgbToCss = (c: RGBColor) => `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a ?? 1})`;
+
 
 const Editor = () => {
   const navigate = useNavigate();
@@ -13,6 +16,9 @@ const Editor = () => {
   const [calendar, setCalendar] = useState<fabric.Group | null>(null);
   const [file, setFile] = useState<string>('');
   const buttonRef = useRef<HTMLAnchorElement>(null);
+  const baseCanvasSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
+  const originalImageSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
+  const backgroundImageRef = useRef<fabric.Image | null>(null);
   const [selectedText, setSelectedText] = useState<fabric.IText | null>(null);
   const [textColor, setTextColor] = useState<RGBColor>({ r: 255, g: 255, b: 255, a: 1 });
   const [textFont, setTextFont] = useState<string>('Arial');
@@ -62,6 +68,11 @@ const Editor = () => {
       oImg.hoverCursor = 'default';
       canvas.add(oImg);
       canvas.sendToBack(oImg);
+
+      // Track sizes for high-quality export
+      baseCanvasSizeRef.current = { width: canvas.getWidth(), height: canvas.getHeight() };
+      originalImageSizeRef.current = { width: imgWidth, height: imgHeight };
+      backgroundImageRef.current = oImg;
     });
     const calendarGroup = getNewCalendar(currentYear, currentOptions);
     canvas.add(calendarGroup);
@@ -129,10 +140,117 @@ const Editor = () => {
     canvas.on('selection:cleared', handleSelectionCleared);
   };
 
-  const exportImage = () => {
-    if (!canvas || !buttonRef.current) return;
+  const exportImage = async () => {
+    if (!canvas || !buttonRef.current || !file) return;
 
-    buttonRef.current.href = canvas.toDataURL({ format: 'png' });
+    const { width: origW, height: origH } = originalImageSizeRef.current;
+    const { width: baseW, height: baseH } = baseCanvasSizeRef.current;
+    if (!origW || !origH || !baseW || !baseH) return;
+
+    // 1) Load the original image at full resolution
+    const rawImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = (e) => reject(e);
+      img.src = file;
+    });
+
+    // 2) Prepare an offscreen canvas at original image size
+    const out = document.createElement('canvas');
+    out.width = origW;
+    out.height = origH;
+    const ctx = out.getContext('2d');
+    if (!ctx) return;
+
+    // Prefer high-quality resampling when compositing
+    ctx.imageSmoothingEnabled = true;
+    // @ts-ignore - not all TS lib targets include this property
+    ctx.imageSmoothingQuality = 'high';
+
+    // 3) Draw the original image as the base layer
+    ctx.drawImage(rawImg, 0, 0, origW, origH);
+
+    // 4) Render Fabric overlay at the photo's native resolution, excluding the background image.
+    const bg = backgroundImageRef.current;
+    const prevVisible: boolean | undefined = bg?.visible;
+    const prevVpt = canvas.viewportTransform ? [...(canvas.viewportTransform as number[])] : null;
+    const prevZoom = (canvas as any).getZoom ? (canvas as any).getZoom() : 1;
+    try {
+      if (bg) {
+        bg.visible = false; // ensure the background image is not re-rendered into the overlay
+      }
+
+      // Force the live canvas to render latest edits (e.g., text editing)
+      if ((canvas as any).requestRenderAll) (canvas as any).requestRenderAll();
+
+      // Compute multipliers; use width-based for export size, but draw to exact dest dims
+      const mW = origW / baseW;
+      const mH = origH / baseH;
+      const multiplier = mW; // height will be matched by drawImage dest sizing
+
+      // Temporarily neutralize viewport transform (zoom/pan) to export in logical coordinates
+      if ((canvas as any).setViewportTransform) {
+        (canvas as any).setViewportTransform([1, 0, 0, 1, 0, 0]);
+      }
+      if ((canvas as any).setZoom) {
+        (canvas as any).setZoom(1);
+      }
+
+      // Export the live canvas overlay (no viewport transform), minus the background
+      let overlayCanvasEl: HTMLCanvasElement | null = null;
+      if ((canvas as any).toCanvasElement) {
+        overlayCanvasEl = (canvas as any).toCanvasElement(multiplier, {
+          left: 0,
+          top: 0,
+          width: baseW,
+          height: baseH,
+          withoutTransform: true,
+          enableRetinaScaling: false,
+        });
+      }
+
+      let overlayImageEl: HTMLImageElement | null = null;
+      if (!overlayCanvasEl) {
+        const dataUrl = canvas.toDataURL({
+          format: 'png',
+          multiplier,
+          left: 0,
+          top: 0,
+          width: baseW,
+          height: baseH,
+          withoutTransform: true,
+          enableRetinaScaling: false,
+        } as any);
+        overlayImageEl = await new Promise<HTMLImageElement>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.src = dataUrl;
+        });
+      }
+
+      // 5) Composite overlay on top of the base image
+      if (overlayCanvasEl) {
+        ctx.drawImage(overlayCanvasEl, 0, 0, origW, origH);
+      } else if (overlayImageEl) {
+        ctx.drawImage(overlayImageEl, 0, 0, origW, origH);
+      }
+    } finally {
+      // Restore background visibility, viewport transform and zoom
+      if (bg) {
+        bg.visible = prevVisible as boolean;
+      }
+      if ((canvas as any).setViewportTransform && prevVpt) {
+        (canvas as any).setViewportTransform(prevVpt as any);
+      }
+      if ((canvas as any).setZoom) {
+        (canvas as any).setZoom(prevZoom);
+      }
+      if ((canvas as any).requestRenderAll) (canvas as any).requestRenderAll();
+    }
+
+    // 6) Export result (synchronous to align with anchor click behavior)
+    buttonRef.current.href = out.toDataURL('image/png');
     buttonRef.current.download = 'Calendar.png';
   };
 
@@ -175,7 +293,7 @@ const Editor = () => {
   // Text tools
   const addText = () => {
     if (!canvas) return;
-    const rgba = `rgba(${textColor.r}, ${textColor.g}, ${textColor.b}, ${textColor.a ?? 1})`;
+    const rgba = rgbToCss(textColor);
     const t = new fabric.IText('Your text', {
       left: canvas.getWidth() / 2,
       top: 80,
@@ -198,7 +316,7 @@ const Editor = () => {
     if (updates.text !== undefined) selectedText.text = updates.text;
     if (updates.colorRgb !== undefined) {
       const c = updates.colorRgb;
-      selectedText.set('fill', `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a ?? 1})`);
+      selectedText.set('fill', rgbToCss(c));
     }
     if (updates.font !== undefined) selectedText.set('fontFamily', updates.font);
     canvas.renderAll();
