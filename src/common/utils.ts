@@ -1,19 +1,22 @@
 import { fabric } from 'fabric';
+import Holidays from 'date-holidays';
 import { DEFAULT_WEEK_OPTIONS, DEFAULT_MONTH_OPTIONS, DEFAULT_GET_MONTHS_OPTIONS, WEEK_DAYS_EN, WEEK_DAYS_ES } from './constants';
-import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions, LAYOUT_OPTIONS, ICurrentOptions, LANG_OPTIONS } from './types';
+import { IGetMonthOptions, IGetMonthsOptions, IGetWeekOptions, LAYOUT_OPTIONS, ICurrentOptions, LANG_OPTIONS, REGION_OPTIONS } from './types';
 
 export const getWeekGroup = (week: string[], pOptions?: IGetWeekOptions): fabric.Group => {
   //Get default options with custom Options
   const options = {...DEFAULT_WEEK_OPTIONS, ...pOptions};
 
   // Create an array of text objects
-  const objs = week.map((text) => {
+  const objs = week.map((text, idx) => {
+    const fill = options.weekFills?.[idx] ?? '#000000';
     const objText = new fabric.Text(text, {
       fontSize: options.weekFontSize,
       originX: "center",
       originY: "top",
       fontFamily: options.weekFontFamily,
       textAlign: options.weekTextAlign,
+      fill,
     });
     objText.width = 20;
     return objText;
@@ -77,6 +80,10 @@ export const getMonthGroup = (year: number, month: number, pOptions: IGetMonthOp
   const weekdayLabels = options.lang === LANG_OPTIONS.ES ? WEEK_DAYS_ES : WEEK_DAYS_EN;
   const weekDays = getWeekGroup(weekdayLabels, { top: options.weekDaysTop || 0 });
 
+  // Prepare holiday checker and highlight color
+  const highlightColor = options.highlightColor || '#dc2626';
+  const isHolidayFn = options.holidayChecker || (() => false);
+
   // Create an array to store the weeks
   const weeks = [];
 
@@ -84,9 +91,16 @@ export const getMonthGroup = (year: number, month: number, pOptions: IGetMonthOp
   do {
     const start = date.getDay();
     const week = new Array(7).fill(" ");
+    const fills: (string | undefined)[] = new Array(7).fill(undefined);
 
     for (let i = start; i < 7; i++) {
-      week[i] = date.getDate().toString();
+      const dateForCell = new Date(date);
+      week[i] = dateForCell.getDate().toString();
+      const isSaturday = dateForCell.getDay() === 6;
+      const isHoliday = isHolidayFn(dateForCell);
+      if (isSaturday || isHoliday) {
+        fills[i] = highlightColor;
+      }
       date.setDate(date.getDate() + 1);
 
       if (date.getDate() === 1) {
@@ -95,7 +109,7 @@ export const getMonthGroup = (year: number, month: number, pOptions: IGetMonthOp
     }
 
     increment += options?.weekTopIncrement || 0;
-    const wk = getWeekGroup(week, { top: increment });
+    const wk = getWeekGroup(week, { top: increment, weekFills: fills });
     weeks.push(wk);
 
   } while (date.getDate() !== 1);
@@ -115,8 +129,18 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
   // create month array
   const months = [];
   // Get months
+  // Prepare holiday checker once for performance
+  const holidayChecker = options?.holidayChecker || (options?.region ? getHolidayChecker(options.region) : undefined);
   for (let i = 0; i < (options?.numberOfMonths || 0); i++) {
-    const month = getMonthGroup(year, i, { top: topSpacing, left: leftSpacing, monthRectFill: options?.currentColor, lang: options?.lang });
+    const month = getMonthGroup(year, i, {
+      top: topSpacing,
+      left: leftSpacing,
+      monthRectFill: options?.currentColor,
+      lang: options?.lang,
+      region: options?.region,
+      holidayChecker,
+      highlightColor: options?.highlightColor,
+    });
     months.push(month);
 
     leftSpacing += options?.monthWidth || 0;
@@ -128,6 +152,18 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
   }
 
   return new fabric.Group(months, { scaleX: 0.75, scaleY: 0.75 });
+}
+
+
+// Build a holiday checker using date-holidays
+function getHolidayChecker(region?: REGION_OPTIONS) {
+  if (!region) return undefined;
+  try {
+    const hd = new Holidays(region as unknown as string);
+    return (d: Date) => Boolean(hd.isHoliday(d));
+  } catch (_) {
+    return undefined;
+  }
 }
 
 export const getNewCalendar = (year: number, options: ICurrentOptions) => {
@@ -142,5 +178,5 @@ export const getNewCalendar = (year: number, options: ICurrentOptions) => {
   const currentColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
   const numberOfMonthsPerRow = layoutMapper[options.currentLayout];
 
-  return getMonthsGroup(year, { currentColor, numberOfMonthsPerRow, lang: options.currentLanguage });
+  return getMonthsGroup(year, { currentColor, numberOfMonthsPerRow, lang: options.currentLanguage, region: options.currentRegion });
 }

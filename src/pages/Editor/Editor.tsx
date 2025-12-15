@@ -2,7 +2,7 @@ import { fabric } from 'fabric';
 import { useEffect, useState, useRef } from 'react';
 import { CanvasEditor, ColorPicker, RadioGroup } from '../../components';
 import { getNewCalendar } from '../../common/utils';
-import { LAYOUT_OPTIONS, ICurrentOptions, LANG_OPTIONS } from '../../common/types';
+import { LAYOUT_OPTIONS, ICurrentOptions, LANG_OPTIONS, REGION_OPTIONS } from '../../common/types';
 import { ColorResult } from 'react-color';
 import { useNavigate } from 'react-router';
 
@@ -18,6 +18,7 @@ const Editor = () => {
     currentLayout: LAYOUT_OPTIONS.TREEBYFOUR,
     currentColor: { r: 211, g: 211, b: 211, a: .5 },
     currentLanguage: LANG_OPTIONS.EN,
+    currentRegion: REGION_OPTIONS.US,
   });
 
   useEffect(() => {
@@ -99,6 +100,13 @@ const Editor = () => {
       currentColor: color?.rgb,
     });
   };
+
+  const handleRegionChange = (region: string) => {
+    setCurrentOptions({
+      ...currentOptions,
+      currentRegion: region as REGION_OPTIONS,
+    });
+  };
   return (
     <div className="h-screen">
       {file && (
@@ -141,6 +149,23 @@ const Editor = () => {
                 titleText={'Language'}
                 name={'Language'}
               />
+            </div>
+
+            <div className="mt-4 text-white">
+              <h2 className="text-white mb-1">Region</h2>
+              <select
+                className="text-black rounded-sm px-2 py-1"
+                value={currentOptions.currentRegion}
+                onChange={(e) => handleRegionChange(e.target.value)}
+              >
+                <option value={REGION_OPTIONS.AR}>Argentina</option>
+                <option value={REGION_OPTIONS.US}>USA</option>
+                <option value={REGION_OPTIONS.VE}>Venezuela</option>
+                <option value={REGION_OPTIONS.ES}>Spain</option>
+                <option value={REGION_OPTIONS.MX}>Mexico</option>
+                <option value={REGION_OPTIONS.IT}>Italy</option>
+                <option value={REGION_OPTIONS.JP}>Japan</option>
+              </select>
             </div>
           </div>
           <CanvasEditor

@@ -13,6 +13,9 @@ export interface IGetMonthOptions extends fabric.IGroupOptions {
   top?: number;
   left?: number;
   lang?: LANG_OPTIONS;
+  region?: REGION_OPTIONS;
+  holidayChecker?: (date: Date) => boolean;
+  highlightColor?: string;
 }
 
 export interface IGetWeekOptions extends fabric.IGroupOptions {
@@ -21,6 +24,7 @@ export interface IGetWeekOptions extends fabric.IGroupOptions {
   weekTextAlign?: string;
   weekTotalWidth?: number;
   weekSpaceBetween?: number;
+  weekFills?: (string | undefined)[];
 }
 
 export interface IGetMonthsOptions extends fabric.IGradientOptions {
@@ -32,6 +36,9 @@ export interface IGetMonthsOptions extends fabric.IGradientOptions {
   monthHeight?: number;
   currentColor?: string;
   lang?: LANG_OPTIONS;
+  region?: REGION_OPTIONS;
+  holidayChecker?: (date: Date) => boolean;
+  highlightColor?: string;
 }
 
 export enum LAYOUT_OPTIONS {
@@ -45,8 +52,19 @@ export enum LANG_OPTIONS {
   ES = 'ES',
 }
 
+export enum REGION_OPTIONS {
+  AR = 'AR',
+  US = 'US',
+  VE = 'VE',
+  ES = 'ES',
+  MX = 'MX',
+  IT = 'IT',
+  JP = 'JP',
+}
+
 export interface ICurrentOptions {
   currentLayout: LAYOUT_OPTIONS;
   currentColor: RGBColor;
   currentLanguage: LANG_OPTIONS;
+  currentRegion: REGION_OPTIONS;
 };
