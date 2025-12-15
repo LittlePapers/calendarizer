@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { ColorResult, SketchPicker, RGBColor } from 'react-color';
 
 interface ColorPickerProps {
+  className?: string;
   currentColor: RGBColor;
   handleColorChange: (color: ColorResult) => void;
   titleText?: string;
 }
 
 const ColorPicker = ({
+  className,
   currentColor,
   handleColorChange,
   titleText,
@@ -25,8 +27,8 @@ const ColorPicker = ({
   const backgroundColor = `rgba(${currentColor.r}, ${currentColor.g}, ${currentColor.b}, ${currentColor.a})`;
 
   return (
-    <React.Fragment>
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{titleText}</h4>
+    <div className={className}>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">{titleText}</h4>
       <button
         type="button"
         onClick={handleClick}
@@ -58,7 +60,7 @@ const ColorPicker = ({
           </div>
         </div>
       ) : null}
-    </React.Fragment>
+    </div>
   );
 };
 

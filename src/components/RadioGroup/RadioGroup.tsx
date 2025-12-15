@@ -22,7 +22,7 @@ const RadioGroup = ({
   return (
     <fieldset>
       {titleText && (
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">
           {titleText}
         </h2>
       )}
@@ -45,7 +45,7 @@ const RadioGroup = ({
               <label
                 id={`${option}-${index}`}
                 htmlFor={id}
-                className="select-none cursor-pointer px-2.5 py-1 rounded-md border border-slate-600/50 bg-slate-700/30 text-slate-200 hover:bg-slate-700/60 transition-colors peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 text-xs"
+                className="select-none cursor-pointer px-2.5 py-1 rounded-md border border-slate-600/50 bg-slate-700/30 text-slate-100 hover:bg-slate-700/60 transition-colors peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 text-xs"
               >
                 {option}
               </label>
