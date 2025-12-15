@@ -25,6 +25,8 @@ const Editor = () => {
   const [textColor, setTextColor] = useState<RGBColor>({ r: 255, g: 255, b: 255, a: 1 });
   const [textFont, setTextFont] = useState<string>('Arial');
   const [showSettings, setShowSettings] = useState<boolean>(true);
+  // Track whether the calendar group is selected (for conditional Settings UI)
+  const [isCalendarSelected, setIsCalendarSelected] = useState<boolean>(false);
 
   const [currentOptions, setCurrentOptions] = useState<ICurrentOptions>({
     currentLayout: LAYOUT_OPTIONS.TREEBYFOUR,
@@ -118,11 +120,16 @@ const Editor = () => {
     const updateSelectedFromObject = (obj: fabric.Object | undefined | null) => {
       if (isTextObject(obj)) {
         setSelectedText(obj);
+        setIsCalendarSelected(false);
         const fill = (obj.fill as string) || '#ffffff';
         setTextColor(toRGBColor(fill));
         setTextFont((obj.fontFamily as string) || 'Arial');
+      } else if (obj && obj.type === 'group' && (obj as any).name === CALENDAR_NAME) {
+        setSelectedText(null);
+        setIsCalendarSelected(true);
       } else {
         setSelectedText(null);
+        setIsCalendarSelected(false);
       }
     };
 
@@ -136,6 +143,7 @@ const Editor = () => {
     };
     const handleSelectionCleared = () => {
       setSelectedText(null);
+      setIsCalendarSelected(false);
     };
 
     canvas.on('selection:created', handleSelectionCreated);
@@ -388,69 +396,10 @@ const Editor = () => {
             >
               Export
             </a>
-            {!selectedText && (
-              <></>
-            )}
 
-            <div className="mt-3">
-              <RadioGroup
-                options={[
-                  LAYOUT_OPTIONS.TREEBYFOUR,
-                  LAYOUT_OPTIONS.SIXBYTWO,
-                  LAYOUT_OPTIONS.FOURBYTHREE,
-                ]}
-                handleChange={handleRadioGroupChange}
-                activeOption={currentOptions?.currentLayout}
-                titleText={'Layout'}
-                name={'Layout'}
-              />
-            </div>
-
-            <div className="mt-3">
-              <ColorPicker
-                className="w-full"
-                currentColor={currentOptions?.currentColor}
-                handleColorChange={handleColorChange}
-                titleText={'Background '}
-              />
-            </div>
-
-            <div className="mt-3">
-              <RadioGroup
-                options={[LANG_OPTIONS.EN, LANG_OPTIONS.ES]}
-                handleChange={handleLanguageChange}
-                activeOption={currentOptions?.currentLanguage}
-                titleText={'Language'}
-                name={'Language'}
-              />
-            </div>
-
-            <div className="mt-3">
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">Region</h2>
-              <div className="relative inline-block w-full">
-                <select
-                  className="appearance-none w-full rounded-md bg-slate-800/80 text-slate-100 px-2.5 py-1.5 pr-8 text-xs shadow-sm ring-1 ring-inset ring-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={currentOptions.currentRegion}
-                  onChange={(e) => handleRegionChange(e.target.value)}
-                >
-                  <option value={REGION_OPTIONS.AR}>Argentina</option>
-                  <option value={REGION_OPTIONS.US}>USA</option>
-                  <option value={REGION_OPTIONS.VE}>Venezuela</option>
-                  <option value={REGION_OPTIONS.ES}>Spain</option>
-                  <option value={REGION_OPTIONS.MX}>Mexico</option>
-                  <option value={REGION_OPTIONS.IT}>Italy</option>
-                  <option value={REGION_OPTIONS.JP}>Japan</option>
-                </select>
-                <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Text inspector */}
-            <div className="mt-3">
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">Text</h2>
-              {selectedText ? (
+            {selectedText ? (
+              <div className="mt-3">
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">Text</h2>
                 <div className="space-y-2">
                   <div className="relative inline-block w-full">
                     <select
@@ -483,18 +432,75 @@ const Editor = () => {
                   </div>
                   <p className="text-[10px] text-zinc-200">Tip: Double‑click a text object on the canvas to edit its content.</p>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <button
-                    onClick={addText}
-                    className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-emerald-500 transition focus:outline-none focus:ring-2 focus:ring-emerald-400 w-full"
-                  >
-                    Add Text
-                  </button>
-                  <p className="text-[10px] text-zinc-200">Tip: After adding, double‑click to edit the text on canvas.</p>
+              </div>
+            ) : isCalendarSelected ? (
+              <>
+                <div className="mt-3">
+                  <RadioGroup
+                    options={[
+                      LAYOUT_OPTIONS.TREEBYFOUR,
+                      LAYOUT_OPTIONS.SIXBYTWO,
+                      LAYOUT_OPTIONS.FOURBYTHREE,
+                    ]}
+                    handleChange={handleRadioGroupChange}
+                    activeOption={currentOptions?.currentLayout}
+                    titleText={'Layout'}
+                    name={'Layout'}
+                  />
                 </div>
-              )}
-            </div>
+
+                <div className="mt-3">
+                  <ColorPicker
+                    className="w-full"
+                    currentColor={currentOptions?.currentColor}
+                    handleColorChange={handleColorChange}
+                    titleText={'Background '}
+                  />
+                </div>
+
+                <div className="mt-3">
+                  <RadioGroup
+                    options={[LANG_OPTIONS.EN, LANG_OPTIONS.ES]}
+                    handleChange={handleLanguageChange}
+                    activeOption={currentOptions?.currentLanguage}
+                    titleText={'Language'}
+                    name={'Language'}
+                  />
+                </div>
+
+                <div className="mt-3">
+                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">Region</h2>
+                  <div className="relative inline-block w-full">
+                    <select
+                      className="appearance-none w-full rounded-md bg-slate-800/80 text-slate-100 px-2.5 py-1.5 pr-8 text-xs shadow-sm ring-1 ring-inset ring-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={currentOptions.currentRegion}
+                      onChange={(e) => handleRegionChange(e.target.value)}
+                    >
+                      <option value={REGION_OPTIONS.AR}>Argentina</option>
+                      <option value={REGION_OPTIONS.US}>USA</option>
+                      <option value={REGION_OPTIONS.VE}>Venezuela</option>
+                      <option value={REGION_OPTIONS.ES}>Spain</option>
+                      <option value={REGION_OPTIONS.MX}>Mexico</option>
+                      <option value={REGION_OPTIONS.IT}>Italy</option>
+                      <option value={REGION_OPTIONS.JP}>Japan</option>
+                    </select>
+                    <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="mt-3">
+                <button
+                  onClick={addText}
+                  className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-emerald-500 transition focus:outline-none focus:ring-2 focus:ring-emerald-400 w-full"
+                >
+                  Add Text
+                </button>
+                <p className="text-[10px] text-zinc-200 mt-2">Tip: After adding, double‑click to edit the text on canvas.</p>
+              </div>
+            )}
           </div>
           )}
           <CanvasEditor
