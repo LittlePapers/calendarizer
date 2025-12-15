@@ -371,6 +371,49 @@ const Editor = () => {
       currentCalendarFont: val,
     });
   };
+
+  // Delete selected text objects with Delete/Backspace key
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!canvas) return;
+      // Ignore if typing in inputs/selects or editing a text object
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement)?.isContentEditable) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const active = canvas.getActiveObject();
+        // Do not intercept while in-text editing
+        if ((selectedText && selectedText.isEditing) || !active) return;
+
+        let removed = false;
+        if (active.type === 'i-text') {
+          canvas.remove(active);
+          removed = true;
+        } else if ((active as any).type === 'activeSelection') {
+          const objs = (active as any).getObjects?.() as fabric.Object[] | undefined;
+          if (objs && objs.length) {
+            objs.forEach((o) => {
+              if (o.type === 'i-text') {
+                canvas.remove(o);
+                removed = true;
+              }
+            });
+          }
+        }
+
+        if (removed) {
+          canvas.discardActiveObject();
+          setSelectedText(null);
+          setIsCalendarSelected(false);
+          canvas.requestRenderAll();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [canvas, selectedText]);
   return (
     <div className="h-screen">
       {file && (
