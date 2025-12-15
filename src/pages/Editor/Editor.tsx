@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router';
 // Small helpers
 const rgbToCss = (c: RGBColor) => `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a ?? 1})`;
 
-
 const CALENDAR_NAME = 'calendar';
 
 const Editor = () => {
@@ -195,7 +194,6 @@ const Editor = () => {
 
       // Compute multipliers; use width-based for export size, but draw to exact dest dims
       const mW = origW / baseW;
-      const mH = origH / baseH;
       const multiplier = mW; // height will be matched by drawImage dest sizing
 
       // Temporarily neutralize viewport transform (zoom/pan) to export in logical coordinates
@@ -370,6 +368,41 @@ const Editor = () => {
       ...currentOptions,
       currentCalendarFont: val,
     });
+  };
+
+  const resetEditor = () => {
+    if (!canvas) return;
+    // Reset UI options to defaults
+    const defaultOptions: ICurrentOptions = {
+      currentLayout: LAYOUT_OPTIONS.TREEBYFOUR,
+      currentColor: { r: 211, g: 211, b: 211, a: 0.5 },
+      currentLanguage: LANG_OPTIONS.EN,
+      currentRegion: REGION_OPTIONS.US,
+      currentCalendarFont: 'monospace',
+    };
+
+    setCurrentOptions(defaultOptions);
+    setTextColor({ r: 255, g: 255, b: 255, a: 1 });
+    setTextFont('Arial');
+
+    // Reset all text objects to default style
+    const objs = canvas.getObjects();
+    objs.forEach((o) => {
+      if (o.type === 'i-text') {
+        const t = o as fabric.IText;
+        t.set({
+          fontFamily: 'Arial',
+          fill: rgbToCss({ r: 255, g: 255, b: 255, a: 1 }),
+          fontSize: 24,
+        });
+      }
+    });
+
+    // Clear selection and re-render; calendar will refresh via effect
+    setSelectedText(null);
+    setIsCalendarSelected(false);
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
   };
 
   // Delete selected text objects with Delete/Backspace key
@@ -568,14 +601,20 @@ const Editor = () => {
                 </div>
               </>
             ) : (
-              <div className="mt-3">
+              <div className="mt-3 space-y-2">
                 <button
                   onClick={addText}
                   className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-emerald-500 transition focus:outline-none focus:ring-2 focus:ring-emerald-400 w-full"
                 >
                   Add Text
                 </button>
-                <p className="text-[10px] text-zinc-200 mt-2">Tip: After adding, double‑click to edit the text on canvas.</p>
+                <button
+                  onClick={resetEditor}
+                  className="inline-flex items-center justify-center rounded-md bg-slate-700 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-slate-600 transition focus:outline-none focus:ring-2 focus:ring-slate-500 w-full"
+                >
+                  Reset to Defaults
+                </button>
+                <p className="text-[10px] text-zinc-200 mt-1">Tip: Reset restores layout, colors, language, and fonts.</p>
               </div>
             )}
           </div>
