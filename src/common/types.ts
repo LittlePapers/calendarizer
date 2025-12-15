@@ -4,6 +4,8 @@ import { RGBColor } from 'react-color';
 export interface IGetMonthOptions extends fabric.IGroupOptions {
   monthNameFontFamily?: string;
   monthNameFontSize?: number;
+  // Also allow specifying font for weeks (weekday labels and day numbers)
+  weekFontFamily?: string;
   monthNameTop?: number;
   monthRectWidth?: number;
   monthRectHeight?: number;
@@ -39,6 +41,8 @@ export interface IGetMonthsOptions extends fabric.IGradientOptions {
   region?: REGION_OPTIONS;
   holidayChecker?: (date: Date) => boolean;
   highlightColor?: string;
+  // Optional font to apply to both month names and week/day labels
+  calendarFontFamily?: string;
 }
 
 export enum LAYOUT_OPTIONS {
@@ -67,4 +71,5 @@ export interface ICurrentOptions {
   currentColor: RGBColor;
   currentLanguage: LANG_OPTIONS;
   currentRegion: REGION_OPTIONS;
+  currentCalendarFont: string;
 };

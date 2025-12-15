@@ -33,6 +33,7 @@ const Editor = () => {
     currentColor: { r: 211, g: 211, b: 211, a: .5 },
     currentLanguage: LANG_OPTIONS.EN,
     currentRegion: REGION_OPTIONS.US,
+    currentCalendarFont: 'monospace',
   });
 
   useEffect(() => {
@@ -362,6 +363,14 @@ const Editor = () => {
     setTextFont(val);
     applyTextChanges({ font: val });
   };
+
+  const onCalendarFontChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setCurrentOptions({
+      ...currentOptions,
+      currentCalendarFont: val,
+    });
+  };
   return (
     <div className="h-screen">
       {file && (
@@ -435,6 +444,31 @@ const Editor = () => {
               </div>
             ) : isCalendarSelected ? (
               <>
+                <div className="mt-3">
+                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">Font</h2>
+                  <div className="relative inline-block w-full">
+                    <select
+                      value={currentOptions.currentCalendarFont}
+                      onChange={onCalendarFontChange}
+                      className="appearance-none w-full rounded-md bg-slate-800/80 text-slate-100 px-2.5 py-1.5 pr-8 text-xs shadow-sm ring-1 ring-inset ring-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="monospace">Monospace</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Helvetica">Helvetica</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Georgia">Georgia</option>
+                      <option value="Courier New">Courier New</option>
+                      <option value="Verdana">Verdana</option>
+                      <option value="Tahoma">Tahoma</option>
+                      <option value="Trebuchet MS">Trebuchet MS</option>
+                      <option value="Impact">Impact</option>
+                      <option value="Comic Sans MS">Comic Sans MS</option>
+                    </select>
+                    <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
                 <div className="mt-3">
                   <RadioGroup
                     options={[

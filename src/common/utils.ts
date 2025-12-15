@@ -78,7 +78,7 @@ export const getMonthGroup = (year: number, month: number, pOptions: IGetMonthOp
 
   // Draw the weekdays based on language
   const weekdayLabels = options.lang === LANG_OPTIONS.ES ? WEEK_DAYS_ES : WEEK_DAYS_EN;
-  const weekDays = getWeekGroup(weekdayLabels, { top: options.weekDaysTop || 0 });
+  const weekDays = getWeekGroup(weekdayLabels, { top: options.weekDaysTop || 0, weekFontFamily: options.weekFontFamily });
 
   // Prepare holiday checker and highlight color
   const highlightColor = options.highlightColor || '#dc2626';
@@ -109,7 +109,7 @@ export const getMonthGroup = (year: number, month: number, pOptions: IGetMonthOp
     }
 
     increment += options?.weekTopIncrement || 0;
-    const wk = getWeekGroup(week, { top: increment, weekFills: fills });
+    const wk = getWeekGroup(week, { top: increment, weekFills: fills, weekFontFamily: options.weekFontFamily });
     weeks.push(wk);
 
   } while (date.getDate() !== 1);
@@ -140,6 +140,8 @@ export const getMonthsGroup = (year: number, pOptions?: IGetMonthsOptions): fabr
       region: options?.region,
       holidayChecker,
       highlightColor: options?.highlightColor,
+      monthNameFontFamily: options?.calendarFontFamily,
+      weekFontFamily: options?.calendarFontFamily,
     });
     months.push(month);
 
@@ -178,5 +180,11 @@ export const getNewCalendar = (year: number, options: ICurrentOptions) => {
   const currentColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
   const numberOfMonthsPerRow = layoutMapper[options.currentLayout];
 
-  return getMonthsGroup(year, { currentColor, numberOfMonthsPerRow, lang: options.currentLanguage, region: options.currentRegion });
+  return getMonthsGroup(year, {
+    currentColor,
+    numberOfMonthsPerRow,
+    lang: options.currentLanguage,
+    region: options.currentRegion,
+    calendarFontFamily: options.currentCalendarFont,
+  });
 }
