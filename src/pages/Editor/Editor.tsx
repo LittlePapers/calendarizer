@@ -123,11 +123,11 @@ const Editor = () => {
       }
     };
 
-    const handleSelectionCreated = (e: any) => {
+    const handleSelectionCreated = (e: fabric.IEvent) => {
       const target = e.selected?.[0] || e.target;
       updateSelectedFromObject(target);
     };
-    const handleSelectionUpdated = (e: any) => {
+    const handleSelectionUpdated = (e: fabric.IEvent) => {
       const target = e.selected?.[0] || e.target;
       updateSelectedFromObject(target);
     };
@@ -165,8 +165,10 @@ const Editor = () => {
 
     // Prefer high-quality resampling when compositing
     ctx.imageSmoothingEnabled = true;
-    // @ts-ignore - not all TS lib targets include this property
-    ctx.imageSmoothingQuality = 'high';
+    const ctxHQ = ctx as CanvasRenderingContext2D & {
+      imageSmoothingQuality?: 'low' | 'medium' | 'high';
+    };
+    ctxHQ.imageSmoothingQuality = 'high';
 
     // 3) Draw the original image as the base layer
     ctx.drawImage(rawImg, 0, 0, origW, origH);
@@ -174,15 +176,15 @@ const Editor = () => {
     // 4) Render Fabric overlay at the photo's native resolution, excluding the background image.
     const bg = backgroundImageRef.current;
     const prevVisible: boolean | undefined = bg?.visible;
-    const prevVpt = canvas.viewportTransform ? [...(canvas.viewportTransform as number[])] : null;
-    const prevZoom = (canvas as any).getZoom ? (canvas as any).getZoom() : 1;
+    const prevVpt: number[] | null = canvas.viewportTransform ? [...canvas.viewportTransform] : null;
+    const prevZoom = canvas.getZoom();
     try {
       if (bg) {
         bg.visible = false; // ensure the background image is not re-rendered into the overlay
       }
 
       // Force the live canvas to render latest edits (e.g., text editing)
-      if ((canvas as any).requestRenderAll) (canvas as any).requestRenderAll();
+      canvas.requestRenderAll();
 
       // Compute multipliers; use width-based for export size, but draw to exact dest dims
       const mW = origW / baseW;
@@ -190,63 +192,29 @@ const Editor = () => {
       const multiplier = mW; // height will be matched by drawImage dest sizing
 
       // Temporarily neutralize viewport transform (zoom/pan) to export in logical coordinates
-      if ((canvas as any).setViewportTransform) {
-        (canvas as any).setViewportTransform([1, 0, 0, 1, 0, 0]);
-      }
-      if ((canvas as any).setZoom) {
-        (canvas as any).setZoom(1);
-      }
+      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      canvas.setZoom(1);
 
       // Export the live canvas overlay (no viewport transform), minus the background
-      let overlayCanvasEl: HTMLCanvasElement | null = null;
-      if ((canvas as any).toCanvasElement) {
-        overlayCanvasEl = (canvas as any).toCanvasElement(multiplier, {
-          left: 0,
-          top: 0,
-          width: baseW,
-          height: baseH,
-          withoutTransform: true,
-          enableRetinaScaling: false,
-        });
-      }
-
-      let overlayImageEl: HTMLImageElement | null = null;
-      if (!overlayCanvasEl) {
-        const dataUrl = canvas.toDataURL({
-          format: 'png',
-          multiplier,
-          left: 0,
-          top: 0,
-          width: baseW,
-          height: baseH,
-          withoutTransform: true,
-          enableRetinaScaling: false,
-        } as any);
-        overlayImageEl = await new Promise<HTMLImageElement>((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.src = dataUrl;
-        });
-      }
+      const overlayCanvasEl = canvas.toCanvasElement(multiplier, {
+        left: 0,
+        top: 0,
+        width: baseW,
+        height: baseH,
+      } as const);
 
       // 5) Composite overlay on top of the base image
-      if (overlayCanvasEl) {
-        ctx.drawImage(overlayCanvasEl, 0, 0, origW, origH);
-      } else if (overlayImageEl) {
-        ctx.drawImage(overlayImageEl, 0, 0, origW, origH);
-      }
+      ctx.drawImage(overlayCanvasEl, 0, 0, origW, origH);
     } finally {
       // Restore background visibility, viewport transform and zoom
       if (bg) {
         bg.visible = prevVisible as boolean;
       }
-      if ((canvas as any).setViewportTransform && prevVpt) {
-        (canvas as any).setViewportTransform(prevVpt as any);
+      if (prevVpt) {
+        canvas.setViewportTransform(prevVpt);
       }
-      if ((canvas as any).setZoom) {
-        (canvas as any).setZoom(prevZoom);
-      }
-      if ((canvas as any).requestRenderAll) (canvas as any).requestRenderAll();
+      canvas.setZoom(prevZoom);
+      canvas.requestRenderAll();
     }
 
     // 6) Export result (synchronous to align with anchor click behavior)
@@ -256,9 +224,67 @@ const Editor = () => {
 
   const updateCalendar = () => {
     const currentYear = new Date().getFullYear();
-    canvas?.remove(calendar as fabric.Object);
-    let newCalendar = getNewCalendar(currentYear, currentOptions);
-    canvas?.add(newCalendar);
+    // Preserve previous calendar transform and stacking order
+    const prev = calendar;
+    let prevIndex = -1;
+    let wasActive = false;
+    let prevProps: Partial<fabric.Group> & {
+      flipX?: boolean;
+      flipY?: boolean;
+      originX?: string;
+      originY?: string;
+    } = {};
+
+    if (prev && canvas) {
+      // Capture current transform/position
+      prevProps = {
+        left: prev.left,
+        top: prev.top,
+        angle: prev.angle,
+        scaleX: prev.scaleX,
+        scaleY: prev.scaleY,
+        flipX: prev.flipX,
+        flipY: prev.flipY,
+        originX: prev.originX,
+        originY: prev.originY,
+      };
+      const objects = canvas.getObjects();
+      prevIndex = objects.indexOf(prev);
+      wasActive = canvas.getActiveObject() === prev;
+      canvas.remove(prev as fabric.Object);
+    }
+
+    const newCalendar = getNewCalendar(currentYear, currentOptions);
+
+    // Re-apply previous transform/position to the new calendar group
+    if (typeof prevProps.left === 'number' || typeof prevProps.top === 'number' ||
+        typeof prevProps.angle === 'number' || typeof prevProps.scaleX === 'number' ||
+        typeof prevProps.scaleY === 'number') {
+      newCalendar.set({
+        left: prevProps.left,
+        top: prevProps.top,
+        angle: prevProps.angle,
+        scaleX: prevProps.scaleX,
+        scaleY: prevProps.scaleY,
+      } as Partial<fabric.Group>);
+    }
+    if (prevProps.originX) newCalendar.originX = prevProps.originX;
+    if (prevProps.originY) newCalendar.originY = prevProps.originY;
+    if (typeof prevProps.flipX === 'boolean') newCalendar.flipX = prevProps.flipX;
+    if (typeof prevProps.flipY === 'boolean') newCalendar.flipY = prevProps.flipY;
+    newCalendar.setCoords();
+
+    if (canvas) {
+      // Add and restore stacking order using typed Canvas API
+      canvas.add(newCalendar);
+      if (prevIndex >= 0) {
+        canvas.moveTo(newCalendar, prevIndex);
+      }
+      if (wasActive) {
+        canvas.setActiveObject(newCalendar);
+      }
+      canvas.requestRenderAll();
+    }
     setCalendar(newCalendar);
   };
 
