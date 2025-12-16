@@ -17,10 +17,13 @@ const Editor = () => {
   const [calendar, setCalendar] = useState<fabric.Group | null>(null);
   const [file, setFile] = useState<string>('');
   const buttonRef = useRef<HTMLAnchorElement>(null);
+  const addImageInputRef = useRef<HTMLInputElement>(null);
+  const replaceImageInputRef = useRef<HTMLInputElement>(null);
   const baseCanvasSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
   const originalImageSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
   const backgroundImageRef = useRef<fabric.Image | null>(null);
   const [selectedText, setSelectedText] = useState<fabric.IText | null>(null);
+  const [selectedImage, setSelectedImage] = useState<fabric.Image | null>(null);
   const [textColor, setTextColor] = useState<RGBColor>({ r: 255, g: 255, b: 255, a: 1 });
   const [textFont, setTextFont] = useState<string>('Arial');
   const [textStyle, setTextStyle] = useState<'normal' | 'bold' | 'italic'>('normal');
@@ -123,6 +126,7 @@ const Editor = () => {
       if (isTextObject(obj)) {
         setSelectedText(obj);
         setIsCalendarSelected(false);
+        setSelectedImage(null);
         const fill = (obj.fill as string) || '#ffffff';
         setTextColor(toRGBColor(fill));
         setTextFont((obj.fontFamily as string) || 'Arial');
@@ -135,10 +139,16 @@ const Editor = () => {
       } else if (obj && obj.type === 'group' && (obj as any).name === CALENDAR_NAME) {
         setSelectedText(null);
         setIsCalendarSelected(true);
+        setSelectedImage(null);
+      } else if (obj && obj.type === 'image' && obj !== backgroundImageRef.current) {
+        setSelectedText(null);
+        setIsCalendarSelected(false);
+        setSelectedImage(obj as fabric.Image);
       } else {
         setSelectedText(null);
         setIsCalendarSelected(false);
         setTextStyle('normal');
+        setSelectedImage(null);
       }
     };
 
@@ -153,6 +163,7 @@ const Editor = () => {
     const handleSelectionCleared = () => {
       setSelectedText(null);
       setIsCalendarSelected(false);
+      setSelectedImage(null);
     };
 
     canvas.on('selection:created', handleSelectionCreated);
@@ -355,6 +366,74 @@ const Editor = () => {
     t.enterEditing();
     t.selectAll();
     canvas.renderAll();
+  };
+
+  const triggerAddImage = () => {
+    addImageInputRef.current?.click();
+  };
+
+  const triggerReplaceImage = () => {
+    if (!selectedImage) return;
+    replaceImageInputRef.current?.click();
+  };
+
+  const handleAddImageFile: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !canvas) return;
+    const url = URL.createObjectURL(file);
+    fabric.Image.fromURL(url, (img) => {
+      const maxW = Math.min(canvas.getWidth(), 400);
+      if (img.width && img.width > maxW) {
+        img.scaleToWidth(maxW);
+      }
+      img.set({
+        left: canvas.getWidth() / 2,
+        top: canvas.getHeight() / 2,
+        originX: 'center',
+        originY: 'center',
+        selectable: true,
+      });
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      setSelectedImage(img);
+      setSelectedText(null);
+      setIsCalendarSelected(false);
+      canvas.requestRenderAll();
+    }, { crossOrigin: 'anonymous' });
+  };
+
+  const handleReplaceImageFile: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !canvas || !selectedImage) return;
+    const url = URL.createObjectURL(file);
+    const old = selectedImage;
+    fabric.Image.fromURL(url, (newImg) => {
+      newImg.set({
+        left: old.left,
+        top: old.top,
+        scaleX: old.scaleX,
+        scaleY: old.scaleY,
+        angle: old.angle,
+        originX: old.originX,
+        originY: old.originY,
+        flipX: old.flipX,
+        flipY: old.flipY,
+      });
+      newImg.setCoords();
+      canvas.remove(old);
+      canvas.add(newImg);
+      canvas.setActiveObject(newImg);
+      setSelectedImage(newImg);
+      canvas.requestRenderAll();
+    }, { crossOrigin: 'anonymous' });
+  };
+
+  const deleteSelectedImage = () => {
+    if (!canvas || !selectedImage) return;
+    canvas.remove(selectedImage);
+    setSelectedImage(null);
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
   };
 
   const applyTextChanges = (updates: { text?: string; colorRgb?: RGBColor; font?: string; style?: 'normal' | 'bold' | 'italic'; }) => {
@@ -627,7 +706,7 @@ const Editor = () => {
     };
   }, [canvas]);
 
-  // Delete selected text objects with Delete/Backspace key
+  // Delete selected text/image objects with Delete/Backspace key
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!canvas) return;
@@ -644,11 +723,17 @@ const Editor = () => {
         if (active.type === 'i-text') {
           canvas.remove(active);
           removed = true;
+        } else if (active.type === 'image' && active !== backgroundImageRef.current) {
+          canvas.remove(active);
+          removed = true;
         } else if ((active as any).type === 'activeSelection') {
           const objs = (active as any).getObjects?.() as fabric.Object[] | undefined;
           if (objs && objs.length) {
             objs.forEach((o) => {
               if (o.type === 'i-text') {
+                canvas.remove(o);
+                removed = true;
+              } else if (o.type === 'image' && o !== backgroundImageRef.current) {
                 canvas.remove(o);
                 removed = true;
               }
@@ -659,6 +744,7 @@ const Editor = () => {
         if (removed) {
           canvas.discardActiveObject();
           setSelectedText(null);
+          setSelectedImage(null);
           setIsCalendarSelected(false);
           canvas.requestRenderAll();
           e.preventDefault();
@@ -861,6 +947,19 @@ const Editor = () => {
                   </div>
                 </div>
               </>
+            ) : selectedImage ? (
+              <div className="mt-3">
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/90">Image</h2>
+                <div className="space-y-2">
+                  <button
+                    onClick={triggerReplaceImage}
+                    className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-indigo-500 transition focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full"
+                  >
+                    Change Image
+                  </button>
+                  <p className="text-[10px] text-zinc-200">Upload a new file to replace the selected image.</p>
+                </div>
+              </div>
             ) : (
               <div className="mt-3 space-y-2">
                 <button
@@ -868,6 +967,12 @@ const Editor = () => {
                   className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-emerald-500 transition focus:outline-none focus:ring-2 focus:ring-emerald-400 w-full"
                 >
                   Add Text
+                </button>
+                <button
+                  onClick={triggerAddImage}
+                  className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-indigo-500 transition focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full"
+                >
+                  Add Image
                 </button>
                 <button
                   onClick={resetEditor}
@@ -878,6 +983,21 @@ const Editor = () => {
                 <p className="text-[10px] text-zinc-200 mt-1">Tip: Reset restores layout, colors, language, and fonts.</p>
               </div>
             )}
+            {/* Hidden inputs for image add/replace */}
+            <input
+              ref={addImageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAddImageFile}
+              className="hidden"
+            />
+            <input
+              ref={replaceImageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleReplaceImageFile}
+              className="hidden"
+            />
           </div>
           )}
           <CanvasEditor
