@@ -783,7 +783,7 @@ const Editor = () => {
               ×
             </button>
             <a
-              className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-400 z-50 text-center"
+              className="cursor-pointer mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-400 z-50 text-center"
               ref={buttonRef}
               onClick={exportImage}
             >
@@ -956,6 +956,12 @@ const Editor = () => {
                     className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-indigo-500 transition focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full"
                   >
                     Change Image
+                  </button>
+                  <button
+                    onClick={deleteSelectedImage}
+                    className="inline-flex items-center justify-center rounded-md bg-rose-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-rose-500 transition focus:outline-none focus:ring-2 focus:ring-rose-400 w-full"
+                  >
+                    Delete Image
                   </button>
                   <p className="text-[10px] text-zinc-200">Upload a new file to replace the selected image.</p>
                 </div>
