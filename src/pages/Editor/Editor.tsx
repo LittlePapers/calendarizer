@@ -30,6 +30,8 @@ const Editor = () => {
   const [showSettings, setShowSettings] = useState<boolean>(true);
   // Track whether the calendar group is selected (for conditional Settings UI)
   const [isCalendarSelected, setIsCalendarSelected] = useState<boolean>(false);
+  // Export options
+  const [exportFormat, setExportFormat] = useState<'png' | 'jpeg'>('png');
 
   const [currentOptions, setCurrentOptions] = useState<ICurrentOptions>({
     currentLayout: LAYOUT_OPTIONS.TREEBYFOUR,
@@ -242,9 +244,17 @@ const Editor = () => {
         canvas.requestRenderAll();
       }
 
-      // 6) Export result (synchronous to align with anchor click behavior)
-      buttonRef.current.href = out.toDataURL('image/png');
-      buttonRef.current.download = 'Calendar.png';
+      // 6) Export result according to selected format (sync to align with anchor click)
+      if (exportFormat === 'jpeg') {
+        // Compressed JPEG data URL
+        const dataUrlJpeg = out.toDataURL('image/jpeg', 0.85);
+        buttonRef.current.href = dataUrlJpeg;
+        buttonRef.current.download = 'Calendar.jpg';
+      } else {
+        const dataUrlPng = out.toDataURL('image/png');
+        buttonRef.current.href = dataUrlPng;
+        buttonRef.current.download = 'Calendar.png';
+      }
     } catch (err) {
       // Gracefully ignore export errors (e.g., invalid blob URL)
       // Optionally, could surface a toast or UI message here.
@@ -782,13 +792,27 @@ const Editor = () => {
             >
               ×
             </button>
-            <a
-              className="cursor-pointer mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-400 z-50 text-center"
-              ref={buttonRef}
-              onClick={exportImage}
-            >
-              Export
-            </a>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex-1">
+                <label className="sr-only" htmlFor="export-format">Format</label>
+                <select
+                  id="export-format"
+                  value={exportFormat}
+                  onChange={(e) => setExportFormat(e.target.value as 'png' | 'jpeg')}
+                  className="w-full rounded-md bg-slate-800/80 text-slate-100 px-2 py-1 text-xs shadow-sm ring-1 ring-inset ring-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="png">PNG</option>
+                  <option value="jpeg">JPEG</option>
+                </select>
+              </div>
+              <a
+                className="cursor-pointer inline-flex items-center justify-center rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-400 z-50 text-center"
+                ref={buttonRef}
+                onClick={exportImage}
+              >
+                Export
+              </a>
+            </div>
 
             {selectedText ? (
               <div className="mt-3">
